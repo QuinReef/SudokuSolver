@@ -8,10 +8,13 @@ namespace Sudoku
 
         static Random random = new();
 
+        int[,] currentGrid = new int[9,9];
+
         public SudokuSolver(string path)
         {
             LoadSudokuFromFile(path);
-
+            currentGrid = sudokuGrids[0];
+            Console.WriteLine("Score:" + EvaluateRows());
         }
 
         //Read Sudoku Puzzle from a File
@@ -79,13 +82,25 @@ namespace Sudoku
             }
         }
 
-
+        private int EvaluateRows()
+        {
+            int score = 0;
+            for (int i = 0; i < 9; i++)
+            {
+                for (int j = 0; j < 9; j++)
+                {
+                    if(currentGrid[i, j] == 0)
+                        score++;
+                }
+            }
+            return score;
+        }
     }
     class Program
     {
         static void Main(string[] args)
         {
-            SudokuSolver sv = new("sudoku_input.txt");
+            SudokuSolver sv = new("../../../sudoku_input.txt");
             SudokuSolver.PrintGrid(sv.sudokuGrids[0]);
         }
     }
