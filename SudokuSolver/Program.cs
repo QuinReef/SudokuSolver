@@ -2,6 +2,19 @@
 using System.IO;
 namespace Sudoku
 {
+    class Square
+    {
+        //Number is always between 0 - 9; 
+        public ushort value;
+        public bool isStatic;
+    }
+    class Cluster
+    {
+        //Is 2d array faster than a 1d array;
+        public Square[,] cluster = new Square[3,3];
+        //public Square[] cluster = new Square[9];
+
+    }
     class SudokuSolver
     {
         public List<int[,]> sudokuGrids = new();
