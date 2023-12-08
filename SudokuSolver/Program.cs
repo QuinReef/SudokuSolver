@@ -14,12 +14,14 @@ class SudokuSolver
     /// Represents the amount of rows and columns on a <see cref="SudokuGrid"/>.
     /// </summary>
     private const ushort SudokuSize = 9;
+    private ushort PlatformCredits = 0;
 
 
-    public SudokuSolver(string path)
+    public SudokuSolver(string path, ushort _PlatformCredits)
     {
         LoadSudokuFromFile(path);
-        FillMissingValues();
+        //FillMissingValues();
+        PlatformCredits = _PlatformCredits;
         Console.WriteLine("Score: " + EvaluateGrid(currentGrid));
     }
 
@@ -145,18 +147,21 @@ class SudokuSolver
         return newGrid;
     }
     //argmax{h(s) | s in successors(t)};
-    private (SudokuGrid, int) SwapValues(ushort blockRow, ushort blockCol, int bestScore)
+    private List<(SudokuGrid, int)> GetSuccessorsOrderedByScore(ushort blockRow, ushort blockCol, int bestScore)
     {
+        List<(SudokuGrid, int)> successors = new List<(SudokuGrid, int)>();
+
         // Get the indices of two random non-fixed cells within the same block
         List<(ushort, ushort)> nonFixedCells = GetNonFixedCellsInBlock(blockRow, blockCol);
-        SudokuGrid bestGrid = new SudokuGrid((SudokuCell[,])currentGrid.Cells.Clone());
+
         if (nonFixedCells.Count < 2)
         {
             // There are not enough non-fixed cells to perform a swap
-            return (currentGrid, bestScore);
+            successors.Add((currentGrid, bestScore));
+            return successors;
         }
 
-        //For each of the permutations of the free cells in this cluster (3x3) 
+        // For each of the permutations of the free cells in this cluster (3x3)
         for (int i = 0; i < nonFixedCells.Count; i++)
         {
             for (int j = i + 1; j < nonFixedCells.Count; j++)
@@ -164,26 +169,23 @@ class SudokuSolver
                 var cell1 = nonFixedCells[i];
                 var cell2 = nonFixedCells[j];
 
-                //Swap  cells 
+                // Swap cells 
                 SudokuGrid newGrid = new SudokuGrid((SudokuCell[,])currentGrid.Cells.Clone());
                 SudokuCell temp = (currentGrid.Cells[cell1.Item1, cell1.Item2]);
                 newGrid.Cells[cell1.Item1, cell1.Item2] = currentGrid.Cells[cell2.Item1, cell2.Item2];
                 newGrid.Cells[cell2.Item1, cell2.Item2] = temp;
 
                 int tempScore = EvaluateGrid(newGrid);
-                if (tempScore < bestScore)
-                {
-                    Console.WriteLine("In Row:" + blockRow + " & Col:" + blockCol + " Swapped: " + newGrid.Cells[cell1.Item1, cell1.Item2].Value + " & " + newGrid.Cells[cell2.Item1, cell2.Item2].Value);
-                    bestGrid = newGrid;
-                    bestScore = tempScore;
-                }
-
-
+                successors.Add((newGrid, tempScore));
             }
         }
 
-        return (bestGrid, bestScore);
+        // Order successors by improved score (ascending order)
+        successors = successors.OrderBy(successor => successor.Item2).ToList();
+
+        return successors;
     }
+
 
     private List<(ushort, ushort)> GetNonFixedCellsInBlock(ushort blockRow, ushort blockCol)
     {
@@ -204,37 +206,107 @@ class SudokuSolver
     }
 
 
-
-    public void HillClimbing()
+    public void HillClimbingWithRandomRestarts(int maxRestarts, int maxIterationsPerRestart, double probability)
     {
-        int maxIterations = 1000000;
-        int iterations = 0;
-        int localMaximum = 0;
+        int restarts = 0;
         int bestScore = EvaluateGrid(currentGrid);
 
-        //while h(t’) ≥ h(t) do t ← t’; t’ ← argmax{ h(s) | s in successors(t)}
-        while (iterations < maxIterations)
+        while (restarts < maxRestarts)
         {
-            (SudokuGrid temp, int newScore) = SwapValues((ushort)random.Next(0, 3), (ushort)random.Next(0, 3), bestScore);
+            Console.WriteLine($"\nRestart #{restarts + 1}");
 
-            //There is a succesor with a better score than the current 
-            if (newScore < bestScore)
+            // Generate a random initial state
+            FillMissingValues();
+            PrintGrid(currentGrid);
+
+
+            int localMaximum = 0;
+            int iterations = 0;
+            // Apply hill climbing to the current random initial state
+            while (iterations < maxIterationsPerRestart)
             {
-                bestScore = newScore;
-                Console.WriteLine(bestScore + " NEW BEST");
-                PrintGrid(temp);
-                currentGrid = temp;
-                localMaximum = 0;
-            }
-            else
-            {
-                localMaximum++;
+                List <(SudokuGrid, int)> successors = GetSuccessorsOrderedByScore((ushort)random.Next(0, 3), (ushort)random.Next(0, 3), bestScore);
+
+                // Biased random-walk: Select the best successor with probability p, otherwise select a random successor
+                SudokuGrid temp;
+                int newScore;
+                if (random.NextDouble() < probability && successors.Count > 0)
+                {
+                    (temp, newScore) = successors.First();  // Select the best successor
+                }
+                else
+                {
+                    int randomIndex = random.Next(successors.Count);
+                    (temp, newScore) = successors[randomIndex];  // Select a random successor
+                }
+
+                if (newScore < bestScore)
+                {
+                    bestScore = newScore;
+                    currentGrid = temp; // Use the current grid directly
+                    localMaximum = 0;
+                    PrintGrid(temp);
+                    Console.WriteLine($"{bestScore} NEW BEST");
+                }
+                //On a local maximum
+                else if (newScore > bestScore)
+                {
+                    localMaximum++;
+                    if (localMaximum < 3)
+                    {
+                        Console.WriteLine("LocalMax");
+                    }
+
+                }
+                //On a plateau
+                else if (newScore == bestScore)
+                {
+                    // This ensures the loop breaks when there is no improvement
+                    localMaximum++; //Can make this its own variable to check on
+                    Console.WriteLine("Plateau");
+                }
+                iterations++;
             }
 
-
-            iterations++;
+            restarts++;
         }
     }
+
+
+    //public void HillClimbing()
+    //{
+    //    int maxIterations = 1000000;
+    //    int iterations = 0;
+    //    int localMaximum = 0;
+    //    int plateau = 0;
+    //    int bestScore = EvaluateGrid(currentGrid);
+
+    //    //while h(t’) ≥ h(t) do t ← t’; t’ ← argmax{ h(s) | s in successors(t)}
+    //    while (iterations < maxIterations)
+    //    {
+    //        (SudokuGrid temp, int newScore) = SwapValues((ushort)random.Next(0, 3), (ushort)random.Next(0,3), bestScore);
+
+    //        //There is a succesor with a better score than the current
+    //        if(newScore < bestScore)
+    //        {
+    //            bestScore = newScore;
+    //            currentGrid = temp;
+    //            localMaximum = 0;
+    //            PrintGrid(temp);
+    //            Console.WriteLine(bestScore + " NEW BEST");
+    //        }
+    //        else if(newScore > bestScore)
+    //        {
+    //            localMaximum++;
+    //        }
+    //        else if (newScore == bestScore)
+    //        {
+    //            plateau++;
+    //        }
+
+    //        iterations++;
+    //    }
+    //}
 
 
     /// <summary>
@@ -291,9 +363,9 @@ class Program
 {
     static void Main(string[] args)
     {
-        SudokuSolver sv = new SudokuSolver("../../../sudoku_input.txt");
+        SudokuSolver sv = new SudokuSolver("../../../sudoku_input.txt", 5);
         SudokuSolver.PrintGrid(sv.currentGrid);
-        sv.HillClimbing();
+        sv.HillClimbingWithRandomRestarts(1000,1000, 0.6);
         SudokuSolver.PrintGrid(sv.currentGrid);
         Console.ReadLine();
     }
