@@ -117,7 +117,7 @@ namespace Sudoku
         public static void PrintGrid(SudokuGrid grid)
         {
             // Top Line
-            Console.Write("\n------------------\n");
+            Console.Write("\n#-----------------#\n");
 
             // For each Row
             for (int i = 0; i < 9; i++)
@@ -136,7 +136,7 @@ namespace Sudoku
 
                 // Every third row print a divider 
                 if (i % 3 == 2)
-                    Console.Write("\n------------------\n");
+                    Console.Write("\n#-----------------#\n");
                 else
                     Console.WriteLine();
             }
@@ -150,34 +150,119 @@ namespace Sudoku
             // Evaluate rows
             for (int i = 0; i < 9; i++)
             {
+                HashSet<ushort> colNumbers = new HashSet<ushort>();
                 HashSet<ushort> rowNumbers = new HashSet<ushort>();
                 for (int j = 0; j < 9; j++)
                 {
-                    if (grid.Cells[i, j].Value != 0)
-                    {
-                        rowNumbers.Add(grid.Cells[i, j].Value);
-                    }
-                }
-                score += 9 - rowNumbers.Count; // Number of missing values in the row
-            }
+                    rowNumbers.Add(grid.Cells[i, j].Value);
+                    colNumbers.Add(grid.Cells[j, i].Value);
 
-            // Evaluate columns
-            for (int j = 0; j < 9; j++)
-            {
-                HashSet<ushort> colNumbers = new HashSet<ushort>();
-                for (int i = 0; i < 9; i++)
-                {
-                    if (grid.Cells[i, j].Value != 0)
-                    {
-                        colNumbers.Add(grid.Cells[i, j].Value);
-                    }
                 }
-                score += 9 - colNumbers.Count; // Number of missing values in the column
+                score += 18 - rowNumbers.Count - colNumbers.Count; // Number of missing values in the row
             }
 
             return score;
         }
 
+        private SudokuGrid SwapValues((int, int) coord1, (int, int) coord2)
+        {
+            SudokuGrid newGrid = currentGrid;
+            SudokuCell temp = currentGrid.Cells[coord1.Item1, coord1.Item2];
+            newGrid.Cells[coord1.Item1, coord1.Item2] = currentGrid.Cells[coord2.Item1, coord2.Item2];
+            newGrid.Cells[coord2.Item1, coord2.Item2] = temp;
+            return newGrid;
+        }
+        //argmax{h(s) | s in successors(t)};
+        private (SudokuGrid, int) SwapValues(ushort blockRow, ushort blockCol, int bestScore)
+        {
+            // Get the indices of two random non-fixed cells within the same block
+            List<(ushort, ushort)> nonFixedCells = GetNonFixedCellsInBlock(blockRow, blockCol);
+            SudokuGrid bestGrid = new SudokuGrid((SudokuCell[,])currentGrid.Cells.Clone());
+            if (nonFixedCells.Count < 2)
+            {
+                // There are not enough non-fixed cells to perform a swap
+                return (currentGrid, bestScore);
+            }
+
+            //For each of the permutations of the free cells in this cluster (3x3) 
+            for (int i = 0; i < nonFixedCells.Count; i++)
+            {
+                for (int j = i + 1; j < nonFixedCells.Count; j++)
+                {
+                    var cell1 = nonFixedCells[i];
+                    var cell2 = nonFixedCells[j];
+
+                    //Swap  cells 
+                    SudokuGrid newGrid = new SudokuGrid((SudokuCell[,])currentGrid.Cells.Clone());
+                    SudokuCell temp = (currentGrid.Cells[cell1.Item1, cell1.Item2]);
+                    newGrid.Cells[cell1.Item1, cell1.Item2] = currentGrid.Cells[cell2.Item1, cell2.Item2];
+                    newGrid.Cells[cell2.Item1, cell2.Item2] = temp;
+
+                    int tempScore = EvaluateGrid(newGrid);
+                    if (tempScore < bestScore)
+                    {
+                        Console.WriteLine("In Row:" + blockRow + " & Col:" + blockCol + " Swapped: " + newGrid.Cells[cell1.Item1, cell1.Item2].Value + " & " + newGrid.Cells[cell2.Item1, cell2.Item2].Value);
+                        bestGrid = newGrid;
+                        bestScore = tempScore;
+                    }
+
+
+                }
+            }
+
+            return (bestGrid, bestScore);
+        }
+
+        private List<(ushort, ushort)> GetNonFixedCellsInBlock(ushort blockRow, ushort blockCol)
+        {
+            List<(ushort, ushort)> nonFixedCells = new List<(ushort, ushort)>();
+
+            for (int i = (blockRow * 3); i < (blockRow * 3) + 3; i++)
+            {
+                for (int j = (blockCol * 3); j < (blockCol * 3) + 3; j++)
+                {
+                    if (!currentGrid.Cells[i, j].IsStatic)
+                    {
+                        nonFixedCells.Add(((ushort)i, (ushort)j));
+                    }
+                }
+            }
+
+            return nonFixedCells;
+        }
+
+      
+
+        public void HillClimbing()
+        {
+            int maxIterations = 1000000;
+            int iterations = 0;
+            int localMaximum = 0;
+            int bestScore = EvaluateGrid(currentGrid);
+
+            //while h(t’) ≥ h(t) do t ← t’; t’ ← argmax{ h(s) | s in successors(t)}
+            while (iterations < maxIterations)
+            {
+                (SudokuGrid temp, int newScore) = SwapValues((ushort)random.Next(0, 3), (ushort)random.Next(0, 3), bestScore);
+
+                //There is a succesor with a better score than the current 
+                if (newScore < bestScore)
+                {
+                    bestScore = newScore;
+                    Console.WriteLine(bestScore + " NEW BEST");
+                    PrintGrid(temp);
+                    currentGrid = temp;
+                    localMaximum = 0;
+                }
+                else
+                {
+                    localMaximum++;
+                }
+
+
+                iterations++;
+            }
+        }
     }
 
     class Program
@@ -186,7 +271,10 @@ namespace Sudoku
         {
             SudokuSolver sv = new SudokuSolver("../../../sudoku_input.txt");
             SudokuSolver.PrintGrid(sv.currentGrid);
+            sv.HillClimbing();
             SudokuSolver.PrintGrid(sv.currentGrid);
+            Console.ReadLine();
+
 
         }
     }
