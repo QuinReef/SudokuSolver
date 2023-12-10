@@ -106,7 +106,7 @@ class SudokuSolver
     // Fill missing values in a 3x3 grid with random numbers
     private SudokuGrid FillMissingValues(SudokuGrid Grid)
     {
-        List<ushort> tempAvaibleNumbers = Grid.avaibleDigits;
+        List<ushort> tempAvaibleNumbers = new List<ushort>(Grid.avaibleDigits);
                 // Fill each cell in the 3x3 grid
         for (int row = 0; row < 3; row++)
         {
@@ -225,7 +225,6 @@ class SudokuSolver
 
             // Generate a random initial state
             CurrentGrid = FillAllMissingValues(CurrentGrid);
-            PrintGrid(CurrentGrid);
 
             int localMaximum = 0;
             int iterations = 0;
@@ -250,16 +249,16 @@ class SudokuSolver
                     k = 0;
                 }
 
-                if (newScore < bestScore)
+                if (newScore > bestScore)
                 {
                     bestScore = newScore;
                     CurrentGrid = temp; // Use the current grid directly
                     localMaximum = 0;
-                    PrintGrid(temp);
+                    PrintGrid(temp, bestScore);
                     Console.WriteLine($"{bestScore} NEW BEST");
                 }
                 //On a local maximum
-                else if (newScore > bestScore)
+                else if (newScore < bestScore)
                 {
                     localMaximum++;
                     if (localMaximum < 3)
@@ -286,8 +285,12 @@ class SudokuSolver
     /// <summary>
     /// Presents the current state of the sudoku puzzle in a proper format on the console interface.
     /// </summary>
-    public static void PrintGrid(SudokuPuzzle puzzle)
+    public static void PrintGrid(SudokuPuzzle puzzle, int? Score = null)
     {
+        if (Score != null){
+            Console.WriteLine($"Score : {Score}");
+        }
+       
         Console.WriteLine("\n┌───────┬───────┬───────┐");
 
         for (int i = 0; i < SudokuSize; i++)
