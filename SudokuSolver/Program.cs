@@ -1,71 +1,101 @@
 ﻿using static Sudoku.SudokuSolver;
+using static Sudoku.SudokuSolver1;
 
 namespace Sudoku;
 
 class SudokuSolver
 {
-    public List<SudokuGrid> sudokuGrids = new List<SudokuGrid>();
+    public List<SudokuPuzzle> SudokuPuzzles = new List<SudokuPuzzle>();
 
-    static Random random = new Random();
-
-    public SudokuGrid currentGrid;
+    public SudokuPuzzle CurrentGrid;
 
     /// <summary>
-    /// Represents the amount of rows and columns on a <see cref="SudokuGrid"/>.
+    /// Represents the amount of rows and columns on a <see cref="SudokuPuzzle"/>.
     /// </summary>
     private const ushort SudokuSize = 9;
-    private ushort PlatformCredits = 0;
+    private ushort RandomRestartTokens = 0;
+    private ushort RandomWalkTokens = 0;
+    private ushort MaxIterations = 0;
+    private double BiasedProbabilty = 1;
 
 
-    public SudokuSolver(string path, ushort _PlatformCredits)
+    public SudokuSolver(string Path, ushort _RandomRestartTokens, ushort _RandomWalkTokens, ushort _MaxIterations, double _BiasedProbabilty)
     {
-        LoadSudokuFromFile(path);
-        //FillMissingValues();
-        PlatformCredits = _PlatformCredits;
-        Console.WriteLine("Score: " + EvaluateGrid(currentGrid));
+        LoadSudokuFromFile(Path);
+        // Initialize currentGrid with the first Sudoku grid
+        CurrentGrid = SudokuPuzzles.First();
+        // Initialize algorithm params  
+        RandomRestartTokens = _RandomRestartTokens;
+        RandomWalkTokens = _RandomWalkTokens;
+        MaxIterations = _MaxIterations;
+        BiasedProbabilty = _BiasedProbabilty;
     }
 
     //Tuple representing a cell in the Sudoku
     public record SudokuCell(ushort Value, bool IsStatic);
 
     // Named 2D Array representing the Sudoku grid
-    public record SudokuGrid(SudokuCell[,] Cells);
+    public record SudokuGrid(SudokuCell[,] Cells, List<ushort> avaibleDigits, List<(ushort,ushort)> NonFixedPositions);
+
+    // Named 2D Array representing the Sudoku grid
+    public record SudokuPuzzle(SudokuGrid[,] Grids, ushort[,] Scores);
 
     // Read Sudoku Puzzle from input file
-    void LoadSudokuFromFile(string filePath)
+    void LoadSudokuFromFile(string FilePath)
     {
         try
         {
-            string[] lines = File.ReadAllLines(filePath);
+            string[] Lines = File.ReadAllLines(FilePath);
 
             // Only process the lines with data
-            for (int k = 1; k < lines.Length; k += 2)
+            for (int k = 1; k < Lines.Length; k += 2)
             {
                 // As the first input is " ", shift the input 1 to the left 
-                string[] values = lines[k].Split(' ').Skip(1).ToArray();
+                string[] Values = Lines[k].Split(' ').Skip(1).ToArray();
 
-                SudokuCell[,] sudokuCells = new SudokuCell[9, 9];
+                SudokuGrid[,] Grids = new SudokuGrid[3, 3];
+                SudokuPuzzle SudokuPuzzle = new SudokuPuzzle(Grids, new ushort[3,3]);
 
                 // Counter for item in the values list.
                 int valCounter = 0;
-                for (int i = 0; i < 9; i++)
+                for (int x = 0; x < 3; x++)
                 {
-                    for (int j = 0; j < 9; j++)
+                    for (int y = 0; y < 3; y++)
                     {
-                        ushort itemVal = ushort.Parse(values[valCounter]);
-                        bool isStatic = itemVal != 0;
-                        sudokuCells[i, j] = isStatic ? new SudokuCell(itemVal, true) : new SudokuCell(0, false);
+                        SudokuCell[,] grid = new SudokuCell[3, 3];
+                        List<ushort> staticDigits = Enumerable.Range(1, 9).Select(x => (ushort)x).ToList();
+                        List<(ushort, ushort)> nonFixedPositions = new();
+                        SudokuGrid SudokuGrid = new SudokuGrid(grid, staticDigits, nonFixedPositions);
+                        for (ushort i = 0; i < 3; i++)
+                        {
+                            for (ushort j = 0; j < 3; j++)
+                            {
+                                int index = x * 27 + y * 3 + i * 9 + j;
 
-                        valCounter++;
+                                ushort itemVal = ushort.Parse(Values[index]);
+                                bool isStatic = false;
+                                if (itemVal != 0)
+                                {
+                                    isStatic = true;
+                                    staticDigits.Remove(itemVal);
+                                }
+                                else
+                                {
+                                    nonFixedPositions.Add((i, j));
+
+                                }
+                                grid[i, j] = isStatic ? new SudokuCell(itemVal, true) : new SudokuCell(0, false);
+                                valCounter++;
+                            }
+                        }
+                        Grids[x, y] = SudokuGrid;
                     }
+
                 }
-
-                // Add to class variable
-                sudokuGrids.Add(new SudokuGrid(sudokuCells));
+                SudokuPuzzles.Add(SudokuPuzzle);
             }
+            
 
-            // Initialize currentGrid with the first Sudoku grid
-            currentGrid = sudokuGrids.First();
         }
         catch (Exception ex)
         {
@@ -73,110 +103,88 @@ class SudokuSolver
         }
     }
 
-    // Fill missing values in each 3x3 grid with random numbers
-    private void FillMissingValues()
+    // Fill missing values in a 3x3 grid with random numbers
+    private SudokuGrid FillMissingValues(SudokuGrid Grid)
     {
-        for (int i = 0; i < 9; i += 3)
-        {
-            for (int j = 0; j < 9; j += 3)
-            {
-                //TODO: Get this data while reading the input file
-                // Create a list of available numbers (1-9)
-                List<ushort> availableNumbers = Enumerable.Range(1, 9).Select(x => (ushort)x).ToList();
-
-                // Remove numbers already present in the current 3x3 grid
-                for (int row = i; row < i + 3; row++)
-                {
-                    for (int col = j; col < j + 3; col++)
-                    {
-                        if (currentGrid.Cells[row, col].IsStatic)
-                        {
-                            availableNumbers.Remove(currentGrid.Cells[row, col].Value);
-                        }
-                    }
-                }
-
+        List<ushort> tempAvaibleNumbers = Grid.avaibleDigits;
                 // Fill each cell in the 3x3 grid
-                for (int row = i; row < i + 3; row++)
+        for (int row = 0; row < 3; row++)
+        {
+            for (int col = 0; col < 3; col++)
+            {
+                if (!Grid.Cells[row, col].IsStatic)
                 {
-                    for (int col = j; col < j + 3; col++)
-                    {
-                        if (!currentGrid.Cells[row, col].IsStatic)
-                        {
-                            // Choose a random number from the available numbers
-                            int randomIndex = random.Next(availableNumbers.Count);
-                            currentGrid.Cells[row, col] = new SudokuCell(availableNumbers[randomIndex], false);
-
-                            // Remove the chosen number from the available numbers
-                            availableNumbers.RemoveAt(randomIndex);
-                        }
-                    }
+                    // Choose a random number from the available numbers
+                    int randomIndex = new Random().Next(tempAvaibleNumbers.Count);
+                    Grid.Cells[row, col] = new SudokuCell(tempAvaibleNumbers[randomIndex], false);
+                    // Remove the chosen number from the available numbers
+                    tempAvaibleNumbers.RemoveAt(randomIndex);
                 }
             }
         }
+        return Grid;
+    }
+
+    private SudokuPuzzle FillAllMissingValues(SudokuPuzzle Puzzle)
+    {
+        // Fill each grid in the 3x3 puzzle
+        for (int row = 0; row < 3; row++)
+        {
+            for (int col = 0; col < 3; col++)
+            {
+                Puzzle.Grids[row,col] = FillMissingValues(Puzzle.Grids[row, col]);
+            }
+        }
+        return Puzzle;
     }
 
 
-    private int EvaluateGrid(SudokuGrid grid)
+    private int Evaluate(SudokuPuzzle puzzle)
     {
         int score = 0;
 
         // Evaluate rows
         for (int i = 0; i < 9; i++)
         {
-            HashSet<ushort> colNumbers = new HashSet<ushort>();
             HashSet<ushort> rowNumbers = new HashSet<ushort>();
+            HashSet<ushort> colNumbers = new HashSet<ushort>();
+
             for (int j = 0; j < 9; j++)
             {
-                rowNumbers.Add(grid.Cells[i, j].Value);
-                colNumbers.Add(grid.Cells[j, i].Value);
-
+                rowNumbers.Add(puzzle.Grids[i / 3, j / 3].Cells[i % 3, j % 3].Value);
+                colNumbers.Add(puzzle.Grids[j / 3, i / 3].Cells[j % 3, i % 3].Value);
             }
-            score += 18 - rowNumbers.Count - colNumbers.Count; // Number of missing values in the row
+
+            // Number of correct values in the row
+            score += rowNumbers.Count + colNumbers.Count;
         }
 
         return score;
     }
 
-    private SudokuGrid SwapValues((int, int) coord1, (int, int) coord2)
+    private List<(SudokuPuzzle, int)> GetSuccessorsOrderedByScore(SudokuPuzzle puzzle, int bestScore)
     {
-        SudokuGrid newGrid = currentGrid;
-        SudokuCell temp = currentGrid.Cells[coord1.Item1, coord1.Item2];
-        newGrid.Cells[coord1.Item1, coord1.Item2] = currentGrid.Cells[coord2.Item1, coord2.Item2];
-        newGrid.Cells[coord2.Item1, coord2.Item2] = temp;
-        return newGrid;
-    }
-    //argmax{h(s) | s in successors(t)};
-    private List<(SudokuGrid, int)> GetSuccessorsOrderedByScore(ushort blockRow, ushort blockCol, int bestScore)
-    {
-        List<(SudokuGrid, int)> successors = new List<(SudokuGrid, int)>();
+        List<(SudokuPuzzle, int)> successors = new List<(SudokuPuzzle, int)>();
 
-        // Get the indices of two random non-fixed cells within the same block
-        List<(ushort, ushort)> nonFixedCells = GetNonFixedCellsInBlock(blockRow, blockCol);
+        // Randomly select a grid
+        int gridX = new Random().Next(0, puzzle.Grids.GetLength(0));
+        int gridY = new Random().Next(0, puzzle.Grids.GetLength(1));
 
-        if (nonFixedCells.Count < 2)
+        SudokuGrid grid = puzzle.Grids[gridX, gridY];
+
+        List<(ushort, ushort)> nonFixedPositions = grid.NonFixedPositions;
+
+        for (int i = 0; i < nonFixedPositions.Count; i++)
         {
-            // There are not enough non-fixed cells to perform a swap
-            successors.Add((currentGrid, bestScore));
-            return successors;
-        }
-
-        // For each of the permutations of the free cells in this cluster (3x3)
-        for (int i = 0; i < nonFixedCells.Count; i++)
-        {
-            for (int j = i + 1; j < nonFixedCells.Count; j++)
+            for (int j = i + 1; j < nonFixedPositions.Count; j++)
             {
-                var cell1 = nonFixedCells[i];
-                var cell2 = nonFixedCells[j];
+                var cell1 = nonFixedPositions[i];
+                var cell2 = nonFixedPositions[j];
 
-                // Swap cells 
-                SudokuGrid newGrid = new SudokuGrid((SudokuCell[,])currentGrid.Cells.Clone());
-                SudokuCell temp = (currentGrid.Cells[cell1.Item1, cell1.Item2]);
-                newGrid.Cells[cell1.Item1, cell1.Item2] = currentGrid.Cells[cell2.Item1, cell2.Item2];
-                newGrid.Cells[cell2.Item1, cell2.Item2] = temp;
+                SudokuPuzzle newPuzzle = SwapCells(puzzle, gridX, gridY, cell1, cell2);
 
-                int tempScore = EvaluateGrid(newGrid);
-                successors.Add((newGrid, tempScore));
+                int tempScore = Evaluate(newPuzzle);
+                successors.Add((newPuzzle, tempScore));
             }
         }
 
@@ -186,64 +194,66 @@ class SudokuSolver
         return successors;
     }
 
-
-    private List<(ushort, ushort)> GetNonFixedCellsInBlock(ushort blockRow, ushort blockCol)
+    private SudokuPuzzle SwapCells(SudokuPuzzle puzzle, int gridX, int gridY, (int, int) cell1, (int, int) cell2)
     {
-        List<(ushort, ushort)> nonFixedCells = new List<(ushort, ushort)>();
+        SudokuPuzzle newPuzzle = new SudokuPuzzle(
+            (SudokuGrid[,])puzzle.Grids.Clone(),
+            (ushort[,])puzzle.Scores.Clone()
+        );
 
-        for (int i = (blockRow * 3); i < (blockRow * 3) + 3; i++)
-        {
-            for (int j = (blockCol * 3); j < (blockCol * 3) + 3; j++)
-            {
-                if (!currentGrid.Cells[i, j].IsStatic)
-                {
-                    nonFixedCells.Add(((ushort)i, (ushort)j));
-                }
-            }
-        }
+        SudokuGrid grid = newPuzzle.Grids[gridX, gridY];
 
-        return nonFixedCells;
+        SudokuCell temp = grid.Cells[cell1.Item1, cell1.Item2];
+        grid.Cells[cell1.Item1, cell1.Item2] = grid.Cells[cell2.Item1, cell2.Item2];
+        grid.Cells[cell2.Item1, cell2.Item2] = temp;
+
+        return newPuzzle;
     }
 
 
-    public void HillClimbingWithRandomRestarts(int maxRestarts, int maxIterationsPerRestart, double probability)
+
+
+
+    public void HillClimbingWithRandomRestarts()
     {
         int restarts = 0;
-        int bestScore = EvaluateGrid(currentGrid);
+        int bestScore = Evaluate(CurrentGrid);
 
-        while (restarts < maxRestarts)
+        while (restarts < RandomRestartTokens)
         {
             Console.WriteLine($"\nRestart #{restarts + 1}");
 
             // Generate a random initial state
-            FillMissingValues();
-            PrintGrid(currentGrid);
-
+            CurrentGrid = FillAllMissingValues(CurrentGrid);
+            PrintGrid(CurrentGrid);
 
             int localMaximum = 0;
             int iterations = 0;
+            int k = 0;
             // Apply hill climbing to the current random initial state
-            while (iterations < maxIterationsPerRestart)
+            while (iterations < MaxIterations)
             {
-                List <(SudokuGrid, int)> successors = GetSuccessorsOrderedByScore((ushort)random.Next(0, 3), (ushort)random.Next(0, 3), bestScore);
+                List <(SudokuPuzzle, int)> successors = GetSuccessorsOrderedByScore(CurrentGrid, bestScore);
 
                 // Biased random-walk: Select the best successor with probability p, otherwise select a random successor
-                SudokuGrid temp;
+                SudokuPuzzle temp;
                 int newScore;
-                if (random.NextDouble() < probability && successors.Count > 0)
+                if (new Random().NextDouble() < BiasedProbabilty && successors.Count > 0 && localMaximum > 0 && k < RandomWalkTokens)
                 {
                     (temp, newScore) = successors.First();  // Select the best successor
+                    k++;
                 }
                 else
                 {
-                    int randomIndex = random.Next(successors.Count);
+                    int randomIndex = new Random().Next(successors.Count);
                     (temp, newScore) = successors[randomIndex];  // Select a random successor
+                    k = 0;
                 }
 
                 if (newScore < bestScore)
                 {
                     bestScore = newScore;
-                    currentGrid = temp; // Use the current grid directly
+                    CurrentGrid = temp; // Use the current grid directly
                     localMaximum = 0;
                     PrintGrid(temp);
                     Console.WriteLine($"{bestScore} NEW BEST");
@@ -273,58 +283,24 @@ class SudokuSolver
     }
 
 
-    //public void HillClimbing()
-    //{
-    //    int maxIterations = 1000000;
-    //    int iterations = 0;
-    //    int localMaximum = 0;
-    //    int plateau = 0;
-    //    int bestScore = EvaluateGrid(currentGrid);
-
-    //    //while h(t’) ≥ h(t) do t ← t’; t’ ← argmax{ h(s) | s in successors(t)}
-    //    while (iterations < maxIterations)
-    //    {
-    //        (SudokuGrid temp, int newScore) = SwapValues((ushort)random.Next(0, 3), (ushort)random.Next(0,3), bestScore);
-
-    //        //There is a succesor with a better score than the current
-    //        if(newScore < bestScore)
-    //        {
-    //            bestScore = newScore;
-    //            currentGrid = temp;
-    //            localMaximum = 0;
-    //            PrintGrid(temp);
-    //            Console.WriteLine(bestScore + " NEW BEST");
-    //        }
-    //        else if(newScore > bestScore)
-    //        {
-    //            localMaximum++;
-    //        }
-    //        else if (newScore == bestScore)
-    //        {
-    //            plateau++;
-    //        }
-
-    //        iterations++;
-    //    }
-    //}
-
-
     /// <summary>
     /// Presents the current state of the sudoku puzzle in a proper format on the console interface.
     /// </summary>
-    public static void PrintGrid(SudokuGrid grid)
+    public static void PrintGrid(SudokuPuzzle puzzle)
     {
         Console.WriteLine("\n┌───────┬───────┬───────┐");
 
         for (int i = 0; i < SudokuSize; i++)
-        { // rows
+        {
+            // Rows
             Console.Write("│ ");
 
             for (int j = 0; j < SudokuSize; j++)
-            { // columns
-                SudokuCell cell = grid.Cells[i, j];
+            {
+                // Columns
+                SudokuCell cell = puzzle.Grids[i / 3, j / 3].Cells[i % 3, j % 3];
 
-                // Give each value the appropriate colour.
+                // Give each value the appropriate color.
                 Console.ForegroundColor = DetermineColor(cell);
                 Console.Write(cell.Value);
                 Console.ResetColor();
@@ -347,6 +323,7 @@ class SudokuSolver
         Console.WriteLine("└───────┴───────┴───────┘");
     }
 
+
     /// <summary>
     /// Determines the colour of a <see cref="SudokuCell"/> based on its properties.
     /// </summary>
@@ -363,11 +340,23 @@ class Program
 {
     static void Main(string[] args)
     {
-        SudokuSolver sv = new SudokuSolver("../../../sudoku_input.txt", 5);
-        SudokuSolver.PrintGrid(sv.currentGrid);
-        sv.HillClimbingWithRandomRestarts(1000,1000, 0.6);
-        SudokuSolver.PrintGrid(sv.currentGrid);
+        ushort randomRestartTokens = 5;
+        ushort randomWalkTokens = 1000;
+        ushort maxIterations = 4;
+        double biasedProbability = 0.7;
+
+        SudokuSolver sv = new SudokuSolver("../../../sudoku_input.txt", randomRestartTokens, randomWalkTokens, maxIterations, biasedProbability);
+
+        Console.WriteLine("Initial Sudoku Puzzle:");
+        SudokuSolver.PrintGrid(sv.CurrentGrid);
+
+        sv.HillClimbingWithRandomRestarts();
+
+        Console.WriteLine("Final Sudoku Puzzle:");
+        SudokuSolver.PrintGrid(sv.CurrentGrid);
+
         Console.ReadLine();
     }
+
 
 }
