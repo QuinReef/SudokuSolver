@@ -285,12 +285,10 @@ class SudokuSolver
     /// <summary>
     /// Presents the current state of the sudoku puzzle in a proper format on the console interface.
     /// </summary>
-    public static void PrintGrid(SudokuPuzzle puzzle, int? Score = null)
+    public static void PrintGrid(SudokuPuzzle puzzle, int? score = null)
     {
-        if (Score != null){
-            Console.WriteLine($"Score : {Score}");
-        }
-       
+        Console.WriteLine(score.HasValue ? $"Score: {score}" : "");
+
         Console.WriteLine("\n┌───────┬───────┬───────┐");
 
         for (int i = 0; i < SudokuSize; i++)
@@ -303,10 +301,18 @@ class SudokuSolver
                 // Columns
                 SudokuCell cell = puzzle.Grids[i / 3, j / 3].Cells[i % 3, j % 3];
 
+                // Highlight satisfied rows or columns
+                if (IsRowSatisfied(puzzle, i) || IsColumnSatisfied(puzzle, j))
+                {
+                    Console.BackgroundColor = ConsoleColor.Green;
+                }
+
                 // Give each value the appropriate color.
                 Console.ForegroundColor = DetermineColor(cell);
                 Console.Write(cell.Value);
                 Console.ResetColor();
+
+                Console.BackgroundColor = ConsoleColor.Black; // Reset background color
 
                 // Print a column divider between each cluster, or add spacing.
                 Console.Write(j % 3 == 2 ? " │ " : " ");
@@ -326,6 +332,30 @@ class SudokuSolver
         Console.WriteLine("└───────┴───────┴───────┘");
     }
 
+    private static bool IsRowSatisfied(SudokuPuzzle puzzle, int rowIndex)
+    {
+        HashSet<ushort> rowNumbers = new HashSet<ushort>();
+
+        for (int j = 0; j < SudokuSize; j++)
+        {
+            rowNumbers.Add(puzzle.Grids[rowIndex / 3, j / 3].Cells[rowIndex % 3, j % 3].Value);
+        }
+
+        return rowNumbers.Count == SudokuSize;
+    }
+
+    private static bool IsColumnSatisfied(SudokuPuzzle puzzle, int colIndex)
+    {
+        HashSet<ushort> colNumbers = new HashSet<ushort>();
+
+        for (int i = 0; i < SudokuSize; i++)
+        {
+            colNumbers.Add(puzzle.Grids[i / 3, colIndex / 3].Cells[i % 3, colIndex % 3].Value);
+        }
+
+        return colNumbers.Count == SudokuSize;
+    }
+
 
     /// <summary>
     /// Determines the colour of a <see cref="SudokuCell"/> based on its properties.
@@ -343,9 +373,9 @@ class Program
 {
     static void Main(string[] args)
     {
-        ushort randomRestartTokens = 5;
+        ushort randomRestartTokens = 10;
         ushort randomWalkTokens = 1000;
-        ushort maxIterations = 4;
+        ushort maxIterations = 100;
         double biasedProbability = 0.7;
 
         SudokuSolver sv = new SudokuSolver("../../../sudoku_input.txt", randomRestartTokens, randomWalkTokens, maxIterations, biasedProbability);
