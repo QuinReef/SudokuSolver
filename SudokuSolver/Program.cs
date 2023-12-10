@@ -1,19 +1,11 @@
-﻿using static Sudoku.SudokuSolver;
+﻿namespace SudokuSolver;
 
-namespace Sudoku;
-
-class SudokuSolver
-{
+public class SudokuSolver {
     public List<SudokuGrid> sudokuGrids = new List<SudokuGrid>();
 
     static Random random = new Random();
 
     public SudokuGrid currentGrid;
-
-    /// <summary>
-    /// Represents the amount of rows and columns on a <see cref="SudokuGrid"/>.
-    /// </summary>
-    private const ushort SudokuSize = 9;
 
 
     public SudokuSolver(string path)
@@ -30,44 +22,36 @@ class SudokuSolver
     public record SudokuGrid(SudokuCell[,] Cells);
 
     // Read Sudoku Puzzle from input file
-    void LoadSudokuFromFile(string filePath)
-    {
-        try
-        {
+    private void LoadSudokuFromFile(string filePath) {
+        try {
             string[] lines = File.ReadAllLines(filePath);
 
             // Only process the lines with data
-            for (int k = 1; k < lines.Length; k += 2)
-            {
-                // As the first input is " ", shift the input 1 to the left 
-                string[] values = lines[k].Split(' ').Skip(1).ToArray();
+            for (int k = 1; k < lines.Length; k += 2) {
+                // Convert the input into a list of ushorts, skipping the initial white space.
+                ushort[] values = lines[k].Split(' ').Skip(1).Select(ushort.Parse).ToArray();
 
                 SudokuCell[,] sudokuCells = new SudokuCell[9, 9];
 
-                // Counter for item in the values list.
-                int valCounter = 0;
-                for (int i = 0; i < 9; i++)
-                {
-                    for (int j = 0; j < 9; j++)
-                    {
-                        ushort itemVal = ushort.Parse(values[valCounter]);
-                        bool isStatic = itemVal != 0;
-                        sudokuCells[i, j] = isStatic ? new SudokuCell(itemVal, true) : new SudokuCell(0, false);
+                // Initialise the actual sudoku grid.
+                ushort counter = 0;
+                for (ushort i = 0; i < 9; i++) { // rows
+                    for (ushort j = 0; j < 9; j++) { // column
+                        ushort value = values[counter];
+                        bool isStatic = value != 0;
+                        sudokuCells[i, j] = new SudokuCell(value, isStatic);
 
-                        valCounter++;
+                        counter++;
                     }
                 }
 
-                // Add to class variable
                 sudokuGrids.Add(new SudokuGrid(sudokuCells));
             }
 
             // Initialize currentGrid with the first Sudoku grid
             currentGrid = sudokuGrids.First();
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine("Error reading Sudoku puzzle from file: " + ex.Message);
+        } catch (Exception e) {
+            Console.WriteLine("Error reading Sudoku puzzle from file: " + e.Message);
         }
     }
 
@@ -205,97 +189,34 @@ class SudokuSolver
 
 
 
-    public void HillClimbing()
-    {
-        int maxIterations = 1000000;
-        int iterations = 0;
-        int localMaximum = 0;
-        int bestScore = EvaluateGrid(currentGrid);
-
-        //while h(t’) ≥ h(t) do t ← t’; t’ ← argmax{ h(s) | s in successors(t)}
-        while (iterations < maxIterations)
-        {
-            (SudokuGrid temp, int newScore) = SwapValues((ushort)random.Next(0, 3), (ushort)random.Next(0, 3), bestScore);
-
-            //There is a succesor with a better score than the current 
-            if (newScore < bestScore)
-            {
-                bestScore = newScore;
-                Console.WriteLine(bestScore + " NEW BEST");
-                PrintGrid(temp);
-                currentGrid = temp;
-                localMaximum = 0;
-            }
-            else
-            {
-                localMaximum++;
-            }
-
-
-            iterations++;
-        }
-    }
-
-
-    /// <summary>
-    /// Presents the current state of the sudoku puzzle in a proper format on the console interface.
-    /// </summary>
-    public static void PrintGrid(SudokuGrid grid)
-    {
-        Console.WriteLine("\n┌───────┬───────┬───────┐");
-
-        for (int i = 0; i < SudokuSize; i++)
-        { // rows
-            Console.Write("│ ");
-
-            for (int j = 0; j < SudokuSize; j++)
-            { // columns
-                SudokuCell cell = grid.Cells[i, j];
-
-                // Give each value the appropriate colour.
-                Console.ForegroundColor = DetermineColor(cell);
-                Console.Write(cell.Value);
-                Console.ResetColor();
-
-                // Print a column divider between each cluster, or add spacing.
-                Console.Write(j % 3 == 2 ? " │ " : " ");
-            }
-
-            // Print a full divider between each row of 3x3 clusters.
-            if (i % 3 == 2 && i != SudokuSize - 1)
-            {
-                Console.WriteLine("\n├───────┼───────┼───────┤");
-            }
-            else
-            {
-                Console.WriteLine();
-            }
-        }
-
-        Console.WriteLine("└───────┴───────┴───────┘");
-    }
-
-    /// <summary>
-    /// Determines the colour of a <see cref="SudokuCell"/> based on its properties.
-    /// </summary>
-    /// <returns>If the cell is static, returns <see cref="ConsoleColor.DarkGray"/>; otherwise, returns <see cref="ConsoleColor.White"/>.</returns>
-    private static ConsoleColor DetermineColor(SudokuCell cell)
-    {
-        return cell.IsStatic ? ConsoleColor.DarkGray : ConsoleColor.White;
-    }
-
-
-
-}
-class Program
-{
-    static void Main(string[] args)
-    {
-        SudokuSolver sv = new SudokuSolver("../../../sudoku_input.txt");
-        SudokuSolver.PrintGrid(sv.currentGrid);
-        sv.HillClimbing();
-        SudokuSolver.PrintGrid(sv.currentGrid);
-        Console.ReadLine();
-    }
-
+    // public void HillClimbing()
+    // {
+    //     int maxIterations = 1000000;
+    //     int iterations = 0;
+    //     int localMaximum = 0;
+    //     int bestScore = EvaluateGrid(currentGrid);
+    //
+    //     //while h(t’) ≥ h(t) do t ← t’; t’ ← argmax{ h(s) | s in successors(t)}
+    //     while (iterations < maxIterations)
+    //     {
+    //         (SudokuGrid temp, int newScore) = SwapValues((ushort)random.Next(0, 3), (ushort)random.Next(0, 3), bestScore);
+    //
+    //         //There is a succesor with a better score than the current 
+    //         if (newScore < bestScore)
+    //         {
+    //             bestScore = newScore;
+    //             Console.WriteLine(bestScore + " NEW BEST");
+    //             PrintGrid(temp);
+    //             currentGrid = temp;
+    //             localMaximum = 0;
+    //         }
+    //         else
+    //         {
+    //             localMaximum++;
+    //         }
+    //
+    //
+    //         iterations++;
+    //     }
+    // }
 }
