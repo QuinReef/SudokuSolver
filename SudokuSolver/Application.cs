@@ -22,8 +22,8 @@ public class Application {
         SudokuSolver sudokuSolver = new SudokuSolver(sudoku, 5, 100, 10000, 0.8);
         sudoku.FillAllMissingValues();
         sudoku.Print();
-        sudoku.InitializeSudokuScore();
-        sudoku.GetHeuristicScore();
+        sudokuSolver.InitializeSudokuScore();
+        sudokuSolver.GetHeuristicScore();
         Console.ReadLine();
     }
 
@@ -49,6 +49,7 @@ public class Application {
 public class SudokuSolver
 {
     public Sudoku? _currentPuzzle;
+    private ushort[] _scores = new ushort[18];
 
     /// <summary>
     /// Represents the amount of rows and columns on a <see cref="SudokuPuzzle"/>.
@@ -70,12 +71,45 @@ public class SudokuSolver
         BiasedProbabilty = _BiasedProbabilty;
     }
 
+    /// <summary>
+    /// Gets the initial sudoku score 
+    /// </summary>
+    public void InitializeSudokuScore()
+    {
+        for (ushort i = 0; i < 9; i++)
+        {
+            _scores[i] = Evaluate(_currentPuzzle.GetRowValues(i));
+            _scores[9 + i] = Evaluate(_currentPuzzle.GetColumnValues(i));
+        }
 
-  
+    }
+    /// <summary>
+    /// Evaluate the score for an array of values
+    /// </summary>
+    private ushort Evaluate(ushort[] values)
+    {
+        HashSet<ushort> uniqueValues = new HashSet<ushort>(values);
+
+        return (ushort)(9 - uniqueValues.Count);
+    }
+
+
+    /// <summary>
+    /// Adds all the _scores values
+    /// </summary>
+    /// <returns>Returns the heuristics Score for the sudoku board</returns>
+    public ushort GetHeuristicScore()
+    {
+        ushort score = 0;
+        for (int i = 0; i < _scores.Length; i++)
+        {
+            score += _scores[i];
+        }
+        return score;
+    }
 }
 public class Sudoku {
     private SudokuCluster[] _clusters = new SudokuCluster[9];
-    private ushort[] _scores = new ushort[18];
 
     private string _grid;
 
@@ -190,6 +224,7 @@ public class Sudoku {
 
         Console.WriteLine("└───────┴───────┴───────┘");
     }
+
     /// <summary>
     /// Fills the Sudoku puzzle randomly.
     /// </summary>
@@ -202,32 +237,8 @@ public class Sudoku {
         }
     }
 
-    /// <summary>
-    /// Gets the initial sudoku score 
-    /// </summary>
-    public void InitializeSudokuScore()
-    {
-        for(ushort i =0; i < 9; i++)
-        {
-            _scores[i] = Evaluate(GetRowValues(i));
-            _scores[9+i]= Evaluate(GetColumnValues(i));
-        }
-       
-    }
+    
 
-    /// <summary>
-    /// Adds all the _scores values
-    /// </summary>
-    /// <returns>Returns the heuristics Score for the sudoku board</returns>
-    public ushort GetHeuristicScore()
-    {
-        ushort score = 0;
-        for(int i =0; i<_scores.Length; i++)
-        {
-            score += _scores[i];
-        }
-        return score;
-    }
 
     /// <summary>
     /// Given a row index, return the suduko values corresponding with the column
@@ -261,13 +272,5 @@ public class Sudoku {
         return columnValues;
     }
 
-    /// <summary>
-    /// Evaluate the score for an array of values
-    /// </summary>
-    private ushort Evaluate(ushort[] values)
-    {
-        HashSet<ushort> uniqueValues = new HashSet<ushort>(values);
-
-        return (ushort)(9 - uniqueValues.Count);
-    }
+    
 }
