@@ -116,11 +116,15 @@ public class SudokuCluster {
     private ushort[,] _cells = new ushort[3,3];
     // All values with incorrect values that still need to be changed.
     private HashSet<(ushort,ushort)> _invalidCells = new();
+    private HashSet<ushort> _avaibleDigits = Enumerable.Range(1, 9).Select(x => (ushort)x).ToHashSet();
+    private HashSet<(ushort, ushort)> _fixedPosisitons = new();
 
     /// <summary>
     /// Retrieves all values present within each cell in the cluster.
     /// </summary>
     public ushort[,] RetrieveCells() => _cells;
+
+
     /// <summary>
     /// Retrieves the coordinates of all values with incorrect values that still need to be changed.
     /// </summary>
@@ -138,7 +142,20 @@ public class SudokuCluster {
     public void AddInvalidCell((ushort,ushort) coord) {
         _invalidCells.Add(coord); // O(1) -> add on hash set
     }
-
+    /// <summary>
+    /// Adds a cell to the set of non fixed cells with the specified coordinates.
+    /// </summary>
+    public void AddFixedPosition((ushort,ushort) coord)
+    {
+        _fixedPosisitons.Add(coord);
+    }
+    /// <summary>
+    /// Adds a value to the set of free cluster digits
+    /// </summary>
+    public void RemoveAvailableDigit(ushort value)
+    {
+        _avaibleDigits.Remove(value);
+    }
     /// <summary>
     /// Swaps the values of two cells in the cluster.
     /// </summary>
@@ -152,5 +169,23 @@ public class SudokuCluster {
     /// </summary>
     public void ValidateCell((ushort, ushort) index) {
         _invalidCells.Remove(index); // O(1) -> remove on hash set
+    }
+
+    /// <summary>
+    /// Fill missing values in a 3x3 grid with random numbers
+    /// </summary>
+    public SudokuCluster FillMissingValues()
+    {
+        HashSet<ushort> tempAvaibleNumbers = new HashSet<ushort>(_avaibleDigits);
+        // Fill each avaible cell in the 3x3 grid
+
+        foreach ((ushort x, ushort y) in _invalidCells)
+        {
+            int randomIndex = new Random().Next(tempAvaibleNumbers.Count);
+            ushort randomNum = tempAvaibleNumbers.ElementAt(randomIndex);
+            _cells[x, y] = randomNum;
+            tempAvaibleNumbers.Remove(randomNum);
+        }
+        return this;
     }
 }
