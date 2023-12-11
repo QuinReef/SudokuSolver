@@ -44,6 +44,9 @@ public class Sudoku {
 
                             if (value == 0) {
                                 cluster1.AddInvalidCell((j, row));
+                            } else {
+                                cluster1.AddFixedPosition((j, row));
+                                cluster1.RemoveAvailableDigit(value);
                             }
 
                             break;
@@ -52,14 +55,20 @@ public class Sudoku {
 
                             if (value == 0) {
                                 cluster2.AddInvalidCell(((ushort)(j - 3), row));
+                            } else {
+                                cluster2.AddFixedPosition(((ushort)(j - 3), row));
+                                cluster2.RemoveAvailableDigit(value);
                             }
-
                             break;
                         case 2:
                             cluster3.AddCell(((ushort)(j - 6), row), value);
 
                             if (value == 0) {
                                 cluster3.AddInvalidCell(((ushort)(j - 6), row));
+                            } else {
+                                cluster3.AddFixedPosition(((ushort)(j - 6), row));
+                                cluster3.RemoveAvailableDigit(value);
+
                             }
 
                             break;
@@ -105,6 +114,44 @@ public class Sudoku {
         }
 
         Console.WriteLine("└───────┴───────┴───────┘");
+    }
+
+    /// <summary>
+    /// Fills the Sudoku puzzle randomly.
+    /// </summary>
+    public void FillAllMissingValues() {
+        // Fill each grid in the 3x3 puzzle
+        for (int i = 0; i < 9; i++) {
+            _clusters[i] = _clusters[i].FillMissingValues();
+        }
+    }
+
+    /// <summary>
+    /// Given a row index, return the suduko values corresponding with the column
+    /// </summary>
+    public ushort[] GetRowValues(ushort row) {
+        ushort[] rowValues = new ushort[9];
+
+        for (int j = 0; j < 9; j++) {
+            rowValues[j] = _clusters[row / 3 * 3 + j / 3].RetrieveCells()[(ushort)(j % 3), row % 3];
+        }
+
+        return rowValues;
+    }
+
+    /// <summary>
+    /// Given a column index, return the suduko values corresponding with the column
+    /// </summary>
+    public ushort[] GetColumnValues(ushort column) {
+        ushort[] columnValues = new ushort[9];
+
+        for (int i = 0; i < 3; i++) {
+            columnValues[i * 3] = _clusters[i + column / 3 * 3].RetrieveCells()[(ushort)(column % 3), 0];
+            columnValues[i * 3 + 1] = _clusters[i + column / 3 * 3].RetrieveCells()[(ushort)(column % 3), 1];
+            columnValues[i * 3 + 2] = _clusters[i + column / 3 * 3].RetrieveCells()[(ushort)(column % 3), 2];
+        }
+
+        return columnValues;
     }
 }
 
