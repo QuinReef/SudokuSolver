@@ -146,9 +146,9 @@ public class Sudoku : ICloneable {
         ushort[] columnValues = new ushort[9];
 
         for (int i = 0; i < 3; i++) {
-            columnValues[i * 3] = _clusters[i + column / 3 * 3].RetrieveCells()[(ushort)(column % 3), 0];
-            columnValues[i * 3 + 1] = _clusters[i + column / 3 * 3].RetrieveCells()[(ushort)(column % 3), 1];
-            columnValues[i * 3 + 2] = _clusters[i + column / 3 * 3].RetrieveCells()[(ushort)(column % 3), 2];
+            columnValues[i * 3] = _clusters[i * 3 + column / 3 ].RetrieveCells()[(ushort)(column % 3), 0];
+            columnValues[i * 3 + 1] = _clusters[i * 3 + column / 3 ].RetrieveCells()[(ushort)(column % 3), 1];
+            columnValues[i * 3 + 2] = _clusters[i * 3 + column / 3 ].RetrieveCells()[(ushort)(column % 3), 2];
         }
 
         return columnValues;

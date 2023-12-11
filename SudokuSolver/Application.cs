@@ -12,13 +12,8 @@ public class Application {
         Sudoku sudoku = new Sudoku(puzzle);
         sudoku.Load();
         sudoku.Print();
-
-        SudokuSolver sudokuSolver = new SudokuSolver(sudoku, 5, 100, 10000, 0.8);
-        sudoku.FillAllMissingValues();
-        sudoku.Print();
-        sudokuSolver.InitializeSudokuScore();
-        // sudokuSolver.GetHeuristicScore();
-        sudokuSolver.GetSuccessorsOrderedByScore();
+        SudokuSolver sudokuSolver = new SudokuSolver(sudoku, 5, 100, 100, 0.8);
+        sudokuSolver.Hillclimb();
         Console.ReadLine();
     }
 
