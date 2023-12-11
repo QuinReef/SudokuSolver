@@ -1,6 +1,114 @@
 ﻿namespace SudokuSolver;
 
 /// <summary>
+/// Represents the full sudoku grid with nine different <see cref="SudokuCluster"/> instances on it.
+/// </summary>
+public class Sudoku {
+    // The nine different clusters of the sudoku grid.
+    // The clusters are laid out as follows:
+    //      0 1 2
+    //      3 4 5
+    //      6 7 8
+    private SudokuCluster[] _clusters = new SudokuCluster[9];
+    // The raw user input representing the starting state of the sudoku grid.
+    private string _grid;
+
+    public Sudoku(string input) {
+        _grid = input;
+    }
+
+    /// <summary>
+    /// Retrieves the full sudoku grid, represented by nine <see cref="SudokuCluster"/> instances.
+    /// </summary>
+    public SudokuCluster[] GetClusters() => _clusters;
+
+    /// <summary>
+    /// Loads each value in the initial input string into the appropriate <see cref="SudokuCluster"/>.
+    /// </summary>
+    public void Load() {
+        // Convert the input into a list of ushorts, skipping the initial white space.
+        ushort[] values = _grid.Split(' ').Skip(1).Select(ushort.Parse).ToArray(); // O(n)
+
+        // Input is read based on 3x1 clusters per iteration "i".
+        for (ushort i = 0; i < 3; i++) {
+            SudokuCluster cluster1 = new(), cluster2 = new(), cluster3 = new();
+
+            for (ushort row = 0; row < 3; row++) { // row in the three respective clusters
+                for (ushort j = 0; j < 9; j++) { // x-value of each value in a respective row
+                    ushort value = values[i * 27 + row * 9 + j];
+
+                    // Determine the appropriate cluster.
+                    switch (j / 3) {
+                        case 0:
+                            cluster1.AddCell((j, row), value);
+
+                            if (value == 0) {
+                                cluster1.AddInvalidCell((j, row));
+                            }
+
+                            break;
+                        case 1:
+                            cluster2.AddCell(((ushort)(j - 3), row), value);
+
+                            if (value == 0) {
+                                cluster2.AddInvalidCell(((ushort)(j - 3), row));
+                            }
+
+                            break;
+                        case 2:
+                            cluster3.AddCell(((ushort)(j - 6), row), value);
+
+                            if (value == 0) {
+                                cluster3.AddInvalidCell(((ushort)(j - 6), row));
+                            }
+
+                            break;
+                    }
+                }
+            }
+
+            _clusters[i * 3] = cluster1;
+            _clusters[i * 3 + 1] = cluster2;
+            _clusters[i * 3 + 2] = cluster3;
+        }
+    }
+
+    /// <summary>
+    /// Presents the current state of the sudoku puzzle in a proper format on the console interface.
+    /// </summary>
+    public void Print() {
+        Console.WriteLine("\n┌───────┬───────┬───────┐");
+
+        // The grid is printed in the same that is it loaded.
+        // The grid is firstly split up into three 3x1 clusters of sudoku clusters.
+        for (int i = 0; i < 3; i++) {
+            // Each row (3) in this cluster of clusters is then iterated over.
+            for (int row = 0; row < 3; row++) {
+                Console.Write("│ ");
+
+                // Each value is printed from left-to-right per row.
+                for (int j = 0; j < 9; j++) {
+                    Console.Write($"{_clusters[i * 3 + j / 3].RetrieveCells()[(ushort)(j % 3), row]} ");
+
+                    if ((j + 1) % 3 == 0) {
+                        Console.Write("│ ");
+                    }
+                }
+
+                Console.WriteLine();
+            }
+
+            // Divider should be printed after each cluster of clusters, barring the bottom line.
+            if (i < 2) {
+                Console.WriteLine("├───────┼───────┼───────┤");
+            }
+        }
+
+        Console.WriteLine("└───────┴───────┴───────┘");
+    }
+}
+
+/// <summary>
 /// Represents a 3x3 grid on the sudoku board.
 /// </summary>
 public class SudokuCluster {
