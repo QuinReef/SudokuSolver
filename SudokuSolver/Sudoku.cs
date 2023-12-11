@@ -3,7 +3,7 @@
 /// <summary>
 /// Represents the full sudoku grid with nine different <see cref="SudokuCluster"/> instances on it.
 /// </summary>
-public class Sudoku {
+public class Sudoku : ICloneable {
     // The nine different clusters of the sudoku grid.
     // The clusters are laid out as follows:
     //      0 1 2
@@ -153,16 +153,23 @@ public class Sudoku {
 
         return columnValues;
     }
+
+    public object Clone() {
+        return new Sudoku(_grid) {
+            _clusters = this._clusters
+        };
+    }
 }
 
 /// <summary>
 /// Represents a 3x3 grid on the sudoku board.
 /// </summary>
-public class SudokuCluster {
+public class SudokuCluster : ICloneable {
     // All values present within each cell in the cluster.
     private ushort[,] _cells = new ushort[3,3];
     // All values with incorrect values that still need to be changed.
     private HashSet<(ushort,ushort)> _invalidCells = new();
+
     private HashSet<ushort> _avaibleDigits = Enumerable.Range(1, 9).Select(x => (ushort)x).ToHashSet();
     private HashSet<(ushort, ushort)> _fixedPosisitons = new();
 
@@ -234,5 +241,14 @@ public class SudokuCluster {
             tempAvaibleNumbers.Remove(randomNum);
         }
         return this;
+    }
+
+    public object Clone() {
+        return new SudokuCluster() {
+            _cells = this._cells,
+            _avaibleDigits = this._avaibleDigits,
+            _fixedPosisitons = this._fixedPosisitons,
+            _invalidCells = this._invalidCells
+        };
     }
 }

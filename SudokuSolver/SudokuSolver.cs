@@ -76,25 +76,27 @@ public class SudokuSolver {
     /// Generates the succesors ordered by ascending heuristic value
     /// </summary>
     /// <returns></returns>
-    private List<(Sudoku, int)> GetSuccessorsOrderedByScore() {
+    public List<(Sudoku, int)> GetSuccessorsOrderedByScore() {
         List<(Sudoku, int)> successors = new List<(Sudoku, int)>();
 
         // Randomly select a cluster
         ushort clusterIndex = (ushort)new Random().Next(0, 9);
 
-        SudokuCluster cluster = _currentPuzzle.GetClusters()[clusterIndex];
-
-        HashSet<(ushort, ushort)> nonFixedPositions = cluster.RetrieveInvalidCells();
+        HashSet<(ushort, ushort)> nonFixedPositions = _currentPuzzle.GetClusters()[clusterIndex].RetrieveInvalidCells();
 
         for (int i = 0; i < nonFixedPositions.Count; i++) {
             for (int j = i + 1; j < nonFixedPositions.Count; j++) {
-                var cell1 = nonFixedPositions.ElementAt(i);
-                var cell2 = nonFixedPositions.ElementAt(j);
+                Sudoku clone = (Sudoku)_currentPuzzle!.Clone();
+                SudokuCluster cluster = clone.GetClusters()[clusterIndex];
+
+                (ushort, ushort) cell1 = nonFixedPositions.ElementAt(i);
+                (ushort, ushort) cell2 = nonFixedPositions.ElementAt(j);
 
                 cluster.SwapCells(cell1, cell2);
 
-                //int tempScore = updateHeuristicScore(cell1, cell2); 
-                //successors.Add((newPuzzle, tempScore));
+                int tempScore = updateHeuristicScore(cell1, cell2); 
+                successors.Add((clone, tempScore));
+                cluster.SwapCells(cell1, cell2);
             }
         }
 
@@ -103,6 +105,4 @@ public class SudokuSolver {
 
         return successors;
     }
-
-
 }

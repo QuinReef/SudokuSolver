@@ -17,7 +17,8 @@ public class Application {
         sudoku.FillAllMissingValues();
         sudoku.Print();
         sudokuSolver.InitializeSudokuScore();
-        sudokuSolver.GetHeuristicScore();
+        // sudokuSolver.GetHeuristicScore();
+        sudokuSolver.GetSuccessorsOrderedByScore();
         Console.ReadLine();
     }
 
