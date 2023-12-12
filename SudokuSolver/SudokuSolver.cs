@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Data;
+using System.Diagnostics;
 
 namespace SudokuSolver;
 
@@ -9,21 +11,21 @@ public class SudokuSolver
 
     private ushort bestScore = 0;
     private ushort RandomRestartTokens = 0;
-    private ushort RandomWalkTokens = 0;
-    private ushort MaxIterations = 0;
-    private double BiasedProbabilty = 1;
-
-
-    public SudokuSolver(Sudoku puzzle, ushort _RandomRestartTokens, ushort _RandomWalkTokens, ushort _MaxIterations, double _BiasedProbabilty)
+    private ushort RandomWalkTokens = 1;
+    private int MaxIterations = 100000000;
+    private double BiasedProbabilty = .99;
+    private ushort LocalMaxTokens = 50;
+    private readonly Random random = new Random();
+    public SudokuSolver(Sudoku puzzle, ushort _RandomRestartTokens, ushort _RandomWalkTokens, int _MaxIterations, double _BiasedProbabilty)
     {
         // Initialize currentGrid with the first Sudoku grid
         _currentPuzzle = puzzle;
 
-        // Initialize algorithm params  
-        RandomRestartTokens = _RandomRestartTokens;
-        RandomWalkTokens = _RandomWalkTokens;
-        MaxIterations = _MaxIterations;
-        BiasedProbabilty = _BiasedProbabilty;
+        //Initialize algorithm params  
+        //RandomRestartTokens = _RandomRestartTokens;
+        //RandomWalkTokens = _RandomWalkTokens;
+        //MaxIterations = _MaxIterations;
+        //BiasedProbabilty = _BiasedProbabilty;
 
         bestScore = InitializeSudokuScore();
         Console.WriteLine($"Initial score: {bestScore}");
@@ -120,56 +122,103 @@ public class SudokuSolver
         return successors;
     }
 
-    public void Hillclimb()
-    {
-        int restarts = 0;
-        while (restarts < RandomRestartTokens)
+    public void RandomWalk() {
+        //Implement a random walk of LocalMaxTokens steps
+        for (int i = 0; i < RandomWalkTokens; i++)
         {
-            Console.WriteLine($"\nRestart #{restarts + 1}");
-            // Generate a random initial state
-            _currentPuzzle.FillAllMissingValues();
-            _currentPuzzle.Print();
-            int localMaximum = 0;
-            int iterations = 0;
-            // Apply hill climbing to the current random initial state
-            while (iterations < MaxIterations)
-            {
-       
-                    List<(Sudoku, ushort)> successors = GetSuccessorsOrderedByScore();
-                    // Biased random-walk: Select the best successor with probability p, otherwise select a random successor
-                    Sudoku temp;
-                    ushort newScore;
-                    if (new Random().NextDouble() < BiasedProbabilty && successors.Count > 0)
-                    {
-                        (temp, newScore) = successors.First();  // Select the best successor
-                    }
-                    else
-                    {
-                        int randomIndex = new Random().Next(successors.Count);
-                        (temp, newScore) = successors[randomIndex];  // Select a random successor
-                    }
-                    if (newScore < bestScore)
-                    {
-                        bestScore = newScore;
-                        _currentPuzzle = temp; // Use the current grid directly
-                        localMaximum = 0;
-                        _currentPuzzle.Print();
-                        Console.WriteLine($"{bestScore} NEW BEST");
-                    }
-                    //On a local maximum
-                    else if (newScore >= bestScore)
-                    {
-                        localMaximum++;
-                        if (localMaximum < 1)
-                        {
-                            Console.WriteLine("LocalMax");
-                        }
-                    }
-                    iterations++;
-         
-            }
-            restarts++;
-        }
+            // Randomly select a cluster
+            ushort clusterIndex = (ushort)random.Next(0, 9);
+
+            HashSet<(ushort, ushort)> nonFixedPositions = _currentPuzzle.GetClusters()[clusterIndex].RetrieveInvalidCells();
+
+            // Randomly select two cells
+            (ushort, ushort) cell1 = nonFixedPositions.ElementAt(random.Next(0, nonFixedPositions.Count));
+            (ushort, ushort) cell2 = nonFixedPositions.ElementAt(random.Next(0, nonFixedPositions.Count));
+
+            // Swap the values of the two cells
+            _currentPuzzle.GetClusters()[clusterIndex].SwapCells(cell1, cell2);
+        }   
     }
 
+    /// <summary>
+    /// Solves the sudoku using the Random Restart Hill Climbing algorithm
+    /// </summary>
+    ///
+    public void RandomRestartHillClimbing()
+    {
+        int consecutiveIterationsWithoutImprovement = 0;
+        int maxIterations = MaxIterations;
+        int randomRestarts = 0;
+        ushort tempBestScore = bestScore;
+        // Restart the algorithm until the sudoku is solved or the max iterations are reached
+        while (GetHeuristicScore() != 0)
+        {
+            // Reset the sudoku score
+            _currentPuzzle.FillAllMissingValues();
+            tempBestScore = InitializeSudokuScore();
+            maxIterations = MaxIterations;
+
+            Console.WriteLine($"Random Restart: {randomRestarts}");
+            _currentPuzzle.Print();
+            Console.SetCursorPosition(Console.CursorLeft, Console.CursorTop);
+
+            
+            // Restart the algorithm until the sudoku is solved or the max iterations are reached
+            while (bestScore != 0 && maxIterations > 0)
+            {
+                // Generate the successors ordered by score
+                List<(Sudoku, ushort)> successors = GetSuccessorsOrderedByScore();
+
+                if (random.NextDouble() > BiasedProbabilty)
+                {
+                    (Sudoku, ushort) randomSuccesor = successors[random.Next(0, successors.Count)];
+                    // Update the current sudoku with the best successor
+                    _currentPuzzle = randomSuccesor.Item1;
+                    // Update the score
+                    tempBestScore = randomSuccesor.Item2;
+                    // Decrease the number of random walk tokens
+                    int startX = Console.CursorLeft;
+                    int startY = Console.CursorTop;
+                    Console.WriteLine($"Random Chosen score: {tempBestScore}                         ");
+                    _currentPuzzle.Print();
+                    Console.SetCursorPosition(startX, startY);
+                }
+                // Check if the best successor has a better score
+                else if (successors[0].Item2 <= tempBestScore)
+                {
+                    // Update the current sudoku with the best successor
+                    _currentPuzzle = successors[0].Item1;
+                    // Update the score
+                    tempBestScore = successors[0].Item2;
+          
+                    int startX = Console.CursorLeft;
+                    int startY = Console.CursorTop;
+                    Console.WriteLine($"Current score: {tempBestScore}                                     ");
+                    _currentPuzzle.Print();
+                    Console.SetCursorPosition(startX, startY);
+                }
+                else
+                {
+                    // No improvement in score
+                    consecutiveIterationsWithoutImprovement++;
+
+                    // Check if it's time to initiate a random walk
+                    if (consecutiveIterationsWithoutImprovement >= LocalMaxTokens)
+                    {
+                        // Perform a random walk
+                        RandomWalk();
+                        consecutiveIterationsWithoutImprovement = 0; // Reset the counter
+                    }
+                }
+
+                maxIterations--;
+            }
+            if (tempBestScore < bestScore)
+            {
+                bestScore = tempBestScore;
+            }
+            randomRestarts++;
+        }
+     }
+   
 }

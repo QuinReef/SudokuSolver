@@ -172,7 +172,7 @@ public class SudokuCluster : ICloneable {
 
     private HashSet<ushort> _avaibleDigits = Enumerable.Range(1, 9).Select(x => (ushort)x).ToHashSet();
     private HashSet<(ushort, ushort)> _fixedPosisitons = new();
-
+    private readonly Random random = new Random();
     /// <summary>
     /// Retrieves all values present within each cell in the cluster.
     /// </summary>
@@ -235,7 +235,7 @@ public class SudokuCluster : ICloneable {
 
         foreach ((ushort x, ushort y) in _invalidCells)
         {
-            int randomIndex = new Random().Next(tempAvaibleNumbers.Count);
+            int randomIndex = random.Next(tempAvaibleNumbers.Count);
             ushort randomNum = tempAvaibleNumbers.ElementAt(randomIndex);
             _cells[x, y] = randomNum;
             tempAvaibleNumbers.Remove(randomNum);
