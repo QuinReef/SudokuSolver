@@ -11,7 +11,7 @@ public class SudokuSolver
 
     private ushort bestScore = 0;
     private ushort RandomRestartTokens = 0;
-    private ushort RandomWalkTokens = 3;
+    private ushort RandomWalkTokens = 4;
     private int MaxIterations = 200000;
     private double BiasedProbabilty = 1;
     private ushort LocalMaxTokens = 50;
@@ -151,6 +151,7 @@ public class SudokuSolver
         int consecutiveIterationsWithoutImprovement = 0;
         int iterations = 0;
         int randomWalkCounter = 0;
+        int startedFrom = 0;
         Sudoku currentBestSolution = _currentPuzzle;
         ushort tempBestScore = bestScore;
 
@@ -167,16 +168,23 @@ public class SudokuSolver
                 // Update the score
                 tempBestScore = successors[0].Item2;
 
+                //If local solution is best
                 if(tempBestScore < bestScore)
                 {
                     bestScore = tempBestScore;
                     currentBestSolution = _currentPuzzle;
                 }
+              
 
                 int startX = Console.CursorLeft;
                 int startY = Console.CursorTop;
-                Console.WriteLine($"Current local score: {tempBestScore}                                     ");
-                Console.WriteLine($"Random walks: {randomWalkCounter}: global best score: {bestScore} ");
+                Console.WriteLine($"┌───────────────────────────────┐");
+                Console.WriteLine($"│ Started from: {startedFrom}\t\t│");
+                Console.WriteLine($"│ Current local score: {tempBestScore}\t│");
+                Console.WriteLine($"│ Random walks: {randomWalkCounter}\t\t│");
+                Console.WriteLine($"│ Random walks steps: {randomWalkCounter * RandomWalkTokens}\t\t│");
+                Console.WriteLine($"│ Global best score: {bestScore}\t\t│");
+                Console.WriteLine($"└───────────────────────────────┘");
 
                 _currentPuzzle.Print();
                 Console.SetCursorPosition(startX, startY);
@@ -190,9 +198,15 @@ public class SudokuSolver
                 // Check if it's time to initiate a random walk
                 if (consecutiveIterationsWithoutImprovement >= LocalMaxTokens)
                 {
+                    //Did the random walk have a higher local optimum, return to the previous local maximum
+                    if (tempBestScore > bestScore)
+                    {
+                        _currentPuzzle = currentBestSolution;
+                    }
                     // Perform a random walk
                     RandomWalk();
                     tempBestScore = InitializeSudokuScore();
+                    startedFrom = tempBestScore;
                     consecutiveIterationsWithoutImprovement = 0; // Reset the counter
                     randomWalkCounter++;
                 }

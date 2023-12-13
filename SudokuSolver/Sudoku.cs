@@ -80,6 +80,7 @@ public class Sudoku : ICloneable {
             _clusters[i * 3 + 1] = cluster2;
             _clusters[i * 3 + 2] = cluster3;
         }
+        FillAllMissingValues();
     }
 
     /// <summary>

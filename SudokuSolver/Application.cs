@@ -11,8 +11,6 @@ public class Application {
         // Load the selected sudoku, and execute the program logic.
         Sudoku sudoku = new Sudoku(puzzle);
         sudoku.Load();
-        sudoku.FillAllMissingValues();
-        sudoku.Print();
 
         SudokuSolver sudokuSolver = new SudokuSolver(sudoku, 5, 2, 10000, 0.95);
         sudokuSolver.HillClimbing();
