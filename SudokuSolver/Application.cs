@@ -9,12 +9,13 @@ public class Application {
         string puzzle = ReadInputFile(grid);
 
         // Load the selected sudoku, and execute the program logic.
-        Sudoku sudoku = new Sudoku(puzzle);
+        Sudoku sudoku = new(puzzle);
         sudoku.Load();
+        sudoku.Print();
 
-        SudokuSolver sudokuSolver = new SudokuSolver(sudoku, 5, 2, 10000, 0.95);
-        sudokuSolver.HillClimbing();
-  
+        SudokuSolver solver = new(sudoku, 5, 2, 10000, 0.95);
+        solver.HillClimbing();
+
         Console.ReadLine();
     }
 
