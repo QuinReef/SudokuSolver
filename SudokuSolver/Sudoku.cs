@@ -156,8 +156,13 @@ public class Sudoku : ICloneable {
     }
 
     public object Clone() {
+        SudokuCluster[] newclusters = new SudokuCluster[9];
+        for (int i = 0; i < this._clusters.Length; i++)
+        {
+            newclusters[i] = (SudokuCluster) this._clusters[i].Clone();
+        }
         return new Sudoku(_grid) {
-            _clusters = this._clusters
+            _clusters = newclusters
         };
     }
 }
