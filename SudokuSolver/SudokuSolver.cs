@@ -11,9 +11,9 @@ public class SudokuSolver
 
     private ushort bestScore = 0;
     private ushort RandomRestartTokens = 0;
-    private ushort RandomWalkTokens = 1;
-    private int MaxIterations = 100000000;
-    private double BiasedProbabilty = .99;
+    private ushort RandomWalkTokens = 3;
+    private int MaxIterations = 200000;
+    private double BiasedProbabilty = 1;
     private ushort LocalMaxTokens = 50;
     private readonly Random random = new Random();
     public SudokuSolver(Sudoku puzzle, ushort _RandomRestartTokens, ushort _RandomWalkTokens, int _MaxIterations, double _BiasedProbabilty)
@@ -110,9 +110,8 @@ public class SudokuSolver
 
                 cluster.SwapCells(cell1, cell2);
 
-                ushort tempScore = InitializeSudokuScore(); //UpdateHeuristicScore(cell1, cell2); 
+                ushort tempScore = UpdateHeuristicScore(cell1, cell2); 
                 successors.Add((clone, tempScore));
-                cluster.SwapCells(cell1, cell2);
             }
         }
 
@@ -124,101 +123,140 @@ public class SudokuSolver
 
     public void RandomWalk() {
         //Implement a random walk of LocalMaxTokens steps
+        Sudoku clone = (Sudoku)_currentPuzzle!.Clone();
+
         for (int i = 0; i < RandomWalkTokens; i++)
         {
             // Randomly select a cluster
             ushort clusterIndex = (ushort)random.Next(0, 9);
 
-            HashSet<(ushort, ushort)> nonFixedPositions = _currentPuzzle.GetClusters()[clusterIndex].RetrieveInvalidCells();
+            
+            SudokuCluster cluster = clone.GetClusters()[clusterIndex];
+            HashSet<(ushort, ushort)> nonFixedPositions = cluster.RetrieveInvalidCells();
 
-            // Randomly select two cells
             (ushort, ushort) cell1 = nonFixedPositions.ElementAt(random.Next(0, nonFixedPositions.Count));
             (ushort, ushort) cell2 = nonFixedPositions.ElementAt(random.Next(0, nonFixedPositions.Count));
 
-            // Swap the values of the two cells
-            _currentPuzzle.GetClusters()[clusterIndex].SwapCells(cell1, cell2);
-        }   
+            cluster.SwapCells(cell1, cell2);
+        }
+        _currentPuzzle = clone;
     }
 
     /// <summary>
     /// Solves the sudoku using the Random Restart Hill Climbing algorithm
     /// </summary>
     ///
-    public void RandomRestartHillClimbing()
+    public void HillClimbing()
     {
         int consecutiveIterationsWithoutImprovement = 0;
-        int maxIterations = MaxIterations;
-        int randomRestarts = 0;
+        int iterations = 0;
+        int randomWalkCounter = 0;
+        Sudoku currentBestSolution = _currentPuzzle;
         ushort tempBestScore = bestScore;
-        // Restart the algorithm until the sudoku is solved or the max iterations are reached
-        while (GetHeuristicScore() != 0)
-        {
-            // Reset the sudoku score
-            _currentPuzzle.FillAllMissingValues();
-            tempBestScore = InitializeSudokuScore();
-            maxIterations = MaxIterations;
 
-            Console.WriteLine($"Random Restart: {randomRestarts}");
-            _currentPuzzle.Print();
-            Console.SetCursorPosition(Console.CursorLeft, Console.CursorTop);
+        while (bestScore != 0 && iterations < MaxIterations)
+        {
+            // Generate the successors ordered by score
+            List<(Sudoku, ushort)> successors = GetSuccessorsOrderedByScore();
+
+            if (successors[0].Item2 < tempBestScore)
+            {
+                // Update the current sudoku with the best successor
+                _currentPuzzle = successors[0].Item1;
+                currentBestSolution = successors[0].Item1;
+                // Update the score
+                tempBestScore = successors[0].Item2;
+
+                if(tempBestScore < bestScore)
+                {
+                    bestScore = tempBestScore;
+                    currentBestSolution = _currentPuzzle;
+                }
+
+                int startX = Console.CursorLeft;
+                int startY = Console.CursorTop;
+                Console.WriteLine($"Current local score: {tempBestScore}                                     ");
+                Console.WriteLine($"Random walks: {randomWalkCounter}: global best score: {bestScore} ");
+
+                _currentPuzzle.Print();
+                Console.SetCursorPosition(startX, startY);
+            }
+            //When on a local maximum or a plateau
+            else
+            {
+                // No improvement in score
+                consecutiveIterationsWithoutImprovement++;
+
+                // Check if it's time to initiate a random walk
+                if (consecutiveIterationsWithoutImprovement >= LocalMaxTokens)
+                {
+                    // Perform a random walk
+                    RandomWalk();
+                    tempBestScore = InitializeSudokuScore();
+                    consecutiveIterationsWithoutImprovement = 0; // Reset the counter
+                    randomWalkCounter++;
+                }
+            }
+            iterations++;
+        }
+        Console.WriteLine($"Best found Score: {bestScore}                             ");
+        currentBestSolution!.Print();
+    }
+}
+
 
             
-            // Restart the algorithm until the sudoku is solved or the max iterations are reached
-            while (bestScore != 0 && maxIterations > 0)
-            {
-                // Generate the successors ordered by score
-                List<(Sudoku, ushort)> successors = GetSuccessorsOrderedByScore();
+            //// Restart the algorithm until the sudoku is solved or the max iterations are reached
+            //while (bestScore != 0 && maxIterations > 0)
+            //{
+            //    // Generate the successors ordered by score
+            //    List<(Sudoku, ushort)> successors = GetSuccessorsOrderedByScore();
 
-                if (random.NextDouble() > BiasedProbabilty)
-                {
-                    (Sudoku, ushort) randomSuccesor = successors[random.Next(0, successors.Count)];
-                    // Update the current sudoku with the best successor
-                    _currentPuzzle = randomSuccesor.Item1;
-                    // Update the score
-                    tempBestScore = randomSuccesor.Item2;
-                    // Decrease the number of random walk tokens
-                    int startX = Console.CursorLeft;
-                    int startY = Console.CursorTop;
-                    Console.WriteLine($"Random Chosen score: {tempBestScore}                         ");
-                    _currentPuzzle.Print();
-                    Console.SetCursorPosition(startX, startY);
-                }
-                // Check if the best successor has a better score
-                else if (successors[0].Item2 <= tempBestScore)
-                {
-                    // Update the current sudoku with the best successor
-                    _currentPuzzle = successors[0].Item1;
-                    // Update the score
-                    tempBestScore = successors[0].Item2;
+//                if (random.NextDouble() > BiasedProbabilty)
+//                {
+//                    (Sudoku, ushort) randomSuccesor = successors[random.Next(0, successors.Count)];
+//                    // Update the current sudoku with the best successor
+//                    _currentPuzzle = randomSuccesor.Item1;
+//                    // Update the score
+//                    tempBestScore = randomSuccesor.Item2;
+//                    // Decrease the number of random walk tokens
+//                    int startX = Console.CursorLeft;
+//                    int startY = Console.CursorTop;
+//                    Console.WriteLine($"Random Chosen score: {tempBestScore}                         ");
+//                    _currentPuzzle.Print();
+//                    Console.SetCursorPosition(startX, startY);
+//                }
+//                // Check if the best successor has a better score
+//                else if (successors[0].Item2 < tempBestScore)
+//                {
+//                    // Update the current sudoku with the best successor
+//                    _currentPuzzle = successors[0].Item1;
+//                    // Update the score
+//                    tempBestScore = successors[0].Item2;
           
-                    int startX = Console.CursorLeft;
-                    int startY = Console.CursorTop;
-                    Console.WriteLine($"Current score: {tempBestScore}                                     ");
-                    _currentPuzzle.Print();
-                    Console.SetCursorPosition(startX, startY);
-                }
-                else
-                {
-                    // No improvement in score
-                    consecutiveIterationsWithoutImprovement++;
+//                    int startX = Console.CursorLeft;
+//                    int startY = Console.CursorTop;
+//                    Console.WriteLine($"Current score: {tempBestScore}                                     ");
+//                    _currentPuzzle.Print();
+//                    Console.SetCursorPosition(startX, startY);
+//                }
+//                else
+//                {
+//                    // No improvement in score
+//                    consecutiveIterationsWithoutImprovement++;
 
-                    // Check if it's time to initiate a random walk
-                    if (consecutiveIterationsWithoutImprovement >= LocalMaxTokens)
-                    {
-                        // Perform a random walk
-                        RandomWalk();
-                        consecutiveIterationsWithoutImprovement = 0; // Reset the counter
-                    }
-                }
+//                    // Check if it's time to initiate a random walk
+//                    if (consecutiveIterationsWithoutImprovement >= LocalMaxTokens)
+//                    {
+//                        // Perform a random walk
+//                        RandomWalk();
+//                        consecutiveIterationsWithoutImprovement = 0; // Reset the counter
+//                    }
+//                }
 
-                maxIterations--;
-            }
-            if (tempBestScore < bestScore)
-            {
-                bestScore = tempBestScore;
-            }
-            randomRestarts++;
-        }
-     }
+//                iterations++;
+//            }
+          
+//     }
    
-}
+//}

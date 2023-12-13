@@ -15,7 +15,7 @@ public class Application {
         sudoku.Print();
 
         SudokuSolver sudokuSolver = new SudokuSolver(sudoku, 5, 2, 10000, 0.95);
-        sudokuSolver.RandomRestartHillClimbing();
+        sudokuSolver.HillClimbing();
   
         Console.ReadLine();
     }
