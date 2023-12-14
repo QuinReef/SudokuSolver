@@ -148,6 +148,27 @@ public class SudokuSolver
     }
 
     /// <summary>
+    /// Prints the statistics for the hillclimb algorithm during runtime
+    /// </summary>
+    /// <param name="startedFrom"></param>
+    /// <param name="tempBestScore"></param>
+    /// <param name="randomWalkCounter"></param>
+    public void PrintHillClimbStats(int startedFrom, ushort tempBestScore, int randomWalkCounter)
+    {
+        int startX = Console.CursorLeft;
+        int startY = Console.CursorTop;
+        Console.WriteLine($"┌───────────────────────────────┐");
+        Console.WriteLine($"│ Started from: {startedFrom}\t\t│");
+        Console.WriteLine($"│ Current local score: {tempBestScore}\t│");
+        Console.WriteLine($"│ Random walks: {randomWalkCounter}\t\t│");
+        Console.WriteLine($"│ Random walks steps: {randomWalkCounter * RandomWalkTokens}\t\t│");
+        Console.WriteLine($"│ Global best score: {bestScore}\t\t│");
+        Console.WriteLine($"└───────────────────────────────┘");
+
+        _currentPuzzle.Print();
+        Console.SetCursorPosition(startX, startY);
+    }
+    /// <summary>
     /// Solves the sudoku using the Random Restart Hill Climbing algorithm
     /// </summary>
     ///
@@ -191,19 +212,8 @@ public class SudokuSolver
                     currentBestSolution = (Sudoku)_currentPuzzle!.Clone();
                 }
 
+                PrintHillClimbStats(startedFrom, tempBestScore, randomWalkCounter);
 
-                int startX = Console.CursorLeft;
-                int startY = Console.CursorTop;
-                Console.WriteLine($"┌───────────────────────────────┐");
-                Console.WriteLine($"│ Started from: {startedFrom}\t\t│");
-                Console.WriteLine($"│ Current local score: {tempBestScore}\t│");
-                Console.WriteLine($"│ Random walks: {randomWalkCounter}\t\t│");
-                Console.WriteLine($"│ Random walks steps: {randomWalkCounter * RandomWalkTokens}\t\t│");
-                Console.WriteLine($"│ Global best score: {bestScore}\t\t│");
-                Console.WriteLine($"└───────────────────────────────┘");
-
-                _currentPuzzle.Print();
-                Console.SetCursorPosition(startX, startY);
             }
             //When on a local maximum or a plateau
             else

@@ -135,7 +135,10 @@ public class Sudoku : ICloneable {
         return values;
     }
 
-    // The implementation of Clone() from the ICloneable interface to enable deep-copying.
+    /// <summary>
+    /// The implementation of Clone() from the ICloneable interface to enable deep-copying.
+    /// </summary>
+    /// <returns></returns>
     public object Clone() {
         SudokuCluster[] newclusters = new SudokuCluster[9];
         for (int i = 0; i < _clusters.Length; i++) {
