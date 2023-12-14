@@ -7,14 +7,15 @@ namespace SudokuSolver;
 public class SudokuSolver
 {
     public Sudoku? _currentPuzzle;
-    private ushort[] _scores = new ushort[18];
+    // The heuristicvalues of each row and column.
+    private ushort[] _heuristicScores = new ushort[18];
 
     private ushort bestScore = 0;
     private ushort RandomRestartTokens = 0;
-    private ushort RandomWalkTokens = 1;
+    private ushort RandomWalkTokens = 5;
     private int MaxIterations = 200000;
     private double BiasedProbabilty = 1;
-    private ushort LocalMaxTokens = 50;
+    private ushort LocalMaxTokens = 9;
     private readonly Random random = new Random();
     public SudokuSolver(Sudoku puzzle, ushort _RandomRestartTokens, ushort _RandomWalkTokens, int _MaxIterations, double _BiasedProbabilty)
     {
@@ -38,8 +39,8 @@ public class SudokuSolver
     {
         for (ushort i = 0; i < 9; i++)
         {
-            _scores[i] = Evaluate(_currentPuzzle.GetRowValues(i));
-            _scores[9 + i] = Evaluate(_currentPuzzle.GetColumnValues(i));
+            _heuristicScores[i] = Evaluate(_currentPuzzle!.GetRowValues(i));
+            _heuristicScores[9 + i] = Evaluate(_currentPuzzle.GetColumnValues(i));
         }
         return GetHeuristicScore();
     }
@@ -47,43 +48,49 @@ public class SudokuSolver
     /// <summary>
     /// Evaluate the score for an array of values
     /// </summary>
-    private ushort Evaluate(ushort[] values)
-    {
-        HashSet<ushort> uniqueValues = new HashSet<ushort>(values.Where(v => v != 0)); // Filter out zeros
-
-        return (ushort)(9 - uniqueValues.Count);
+    private ushort Evaluate(ushort[] values) {
+        SortedSet<ushort> uniques = new SortedSet<ushort>();
+        
+        ushort counter = 0;
+        foreach (ushort val in values) {
+            if (!uniques.Add(val)) {
+                counter++;
+            }
+        }
+        
+        return counter;
     }
 
     /// <summary>
-    /// Adds all the _scores values
+    /// Adds all the _heuristicScores values
     /// </summary>
     /// <returns>Returns the heuristics Score for the sudoku board</returns>
     public ushort GetHeuristicScore()
     {
         ushort score = 0;
-        for (int i = 0; i < _scores.Length; i++)
+        for (int i = 0; i < _heuristicScores.Length; i++)
         {
-            score += _scores[i];
+            score += _heuristicScores[i];
         }
+
         return score;
     }
 
     /// <summary>
     /// Given a row and column update the scores list
     /// </summary>
-    /// <param name="row"></param>
-    /// <param name="column"></param>
     /// <returns>Updated sudoku game heuristic score</returns>
-    public ushort UpdateHeuristicScore((ushort row, ushort column) coord1, (ushort row, ushort column) coord2)
-    {
-        _scores[coord1.row] = Evaluate(_currentPuzzle.GetRowValues(coord1.row));
-        _scores[coord1.column + 9] = Evaluate(_currentPuzzle.GetRowValues(coord1.column));
-        _scores[coord2.row] = Evaluate(_currentPuzzle.GetRowValues(coord2.row));
-        _scores[coord2.column + 9] = Evaluate(_currentPuzzle.GetRowValues(coord2.column));
+    public ushort UpdateHeuristicScore((ushort column, ushort row) coord1, (ushort column, ushort row) coord2) {
+        // (0,7) -> (1,8)
+
+        _heuristicScores[coord1.column] = Evaluate(_currentPuzzle!.GetColumnValues(coord1.column));
+        _heuristicScores[coord1.row + 9] = Evaluate(_currentPuzzle.GetRowValues(coord1.row));
+
+        _heuristicScores[coord2.column] = Evaluate(_currentPuzzle.GetColumnValues(coord2.column));
+        _heuristicScores[coord1.row + 9] = Evaluate(_currentPuzzle.GetRowValues(coord2.row));
 
         return GetHeuristicScore();
     }
-
 
     /// <summary>
     /// Generates the succesors ordered by ascending heuristic value
@@ -96,22 +103,31 @@ public class SudokuSolver
         // Randomly select a cluster
         ushort clusterIndex = (ushort)new Random().Next(0, 9);
 
-        HashSet<(ushort, ushort)> nonFixedPositions = _currentPuzzle.GetClusters()[clusterIndex].RetrieveInvalidCells();
+        HashSet<(ushort, ushort)> nonFixedPositions = _currentPuzzle!.GetSudokuGrid()[clusterIndex].RetrieveInvalidCells();
 
         for (int i = 0; i < nonFixedPositions.Count; i++)
         {
             for (int j = i + 1; j < nonFixedPositions.Count; j++)
             {
                 Sudoku clone = (Sudoku)_currentPuzzle!.Clone();
-                SudokuCluster cluster = clone.GetClusters()[clusterIndex];
+                Sudoku old = (Sudoku)_currentPuzzle.Clone();
+                SudokuCluster cluster = clone.GetSudokuGrid()[clusterIndex];
 
                 (ushort, ushort) cell1 = nonFixedPositions.ElementAt(i);
                 (ushort, ushort) cell2 = nonFixedPositions.ElementAt(j);
 
                 cluster.SwapCells(cell1, cell2);
 
-                ushort tempScore = UpdateHeuristicScore(cell1, cell2); 
+                _currentPuzzle = (Sudoku)clone.Clone();
+
+                // column, row -> 5
+                (ushort, ushort) c1 = ((ushort)(cell1.Item1 + clusterIndex % 3 * 3), (ushort)(cell1.Item2 + clusterIndex / 3 * 3));
+                (ushort, ushort) c2 = ((ushort)(cell2.Item1 + clusterIndex % 3 * 3), (ushort)(cell2.Item2 + clusterIndex / 3 * 3));
+
+                ushort tempScore = UpdateHeuristicScore(c1, c2); 
                 successors.Add((clone, tempScore));
+
+                _currentPuzzle = (Sudoku)old.Clone();
             }
         }
 
@@ -141,7 +157,7 @@ public class SudokuSolver
 
             List<(Sudoku, ushort)> successors = GetSuccessorsOrderedByScore();
 
-            _currentPuzzle = successors[random.Next(0, successors.Count)].Item1;
+            _currentPuzzle = (Sudoku)successors[random.Next(0, successors.Count)].Item1.Clone();
         }
         //_currentPuzzle = clone;
         ushort randomWalkScore = InitializeSudokuScore();
@@ -165,13 +181,13 @@ public class SudokuSolver
         Console.WriteLine($"│ Global best score: {bestScore}\t\t│");
         Console.WriteLine($"└───────────────────────────────┘");
 
-        _currentPuzzle.Print();
+        _currentPuzzle!.Print();
         Console.SetCursorPosition(startX, startY);
     }
+
     /// <summary>
     /// Solves the sudoku using the Random Restart Hill Climbing algorithm
     /// </summary>
-    ///
     public void HillClimbing()
     {
         //_currentPuzzle.Print();
