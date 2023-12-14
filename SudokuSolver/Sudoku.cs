@@ -76,7 +76,7 @@ public class Sudoku : ICloneable {
     /// <summary>
     /// Presents the current state of the sudoku puzzle in a proper format on the console interface.
     /// </summary>
-    public void Print() {
+    public void Show() {
         Console.WriteLine("\n┌───────┬───────┬───────┐");
 
         // The grid is printed in the same way that it is loaded.

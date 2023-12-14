@@ -1,48 +1,58 @@
-﻿using System;
-using System.Data;
-using System.Diagnostics;
+﻿using Timer = System.Timers.Timer;
 
 namespace SudokuSolver;
 
-public class SudokuSolver
-{
-    public Sudoku? _currentPuzzle;
+public class SudokuSolver {
+    // The current state of the sudoku grid.
+    private Sudoku _activeSudoku;
     // The heuristicvalues of each row and column.
     private ushort[] _heuristicScores = new ushort[18];
 
-    private ushort bestScore = 0;
-    private ushort RandomRestartTokens = 0;
     private ushort RandomWalkTokens = 5;
-    private int MaxIterations = 200000;
-    private double BiasedProbabilty = 1;
     private ushort LocalMaxTokens = 9;
+
+    // Statistics to print to the console.
+    private ushort _bestScore;
+    private ushort _iterations;
+    private ushort _walksEntered;
+
+    // Timer to measure total time complexity.
+    private Timer _timer = new();
+
     private readonly Random random = new Random();
-    public SudokuSolver(Sudoku puzzle, ushort _RandomRestartTokens, ushort _RandomWalkTokens, int _MaxIterations, double _BiasedProbabilty)
+
+    public SudokuSolver(Sudoku s, ushort walks)
     {
         // Initialize currentGrid with the first Sudoku grid
-        _currentPuzzle = puzzle;
+        _activeSudoku = s;
 
-        //Initialize algorithm params  
-        //RandomRestartTokens = _RandomRestartTokens;
-        //RandomWalkTokens = _RandomWalkTokens;
-        //MaxIterations = _MaxIterations;
-        //BiasedProbabilty = _BiasedProbabilty;
+        RandomWalkTokens = walks;
 
-        bestScore = InitializeSudokuScore();
-        Console.WriteLine($"Initial score: {bestScore}");
+        // _timer.Enabled = true;
+        // _timer.Start();
+
+        _bestScore = InitHeuristicScore();
+        // Console.WriteLine($"Initial score: {bestScore}");
     }
 
     /// <summary>
-    /// Gets the initial sudoku score 
+    /// Initialises the initial heuristic values.
     /// </summary>
-    public ushort InitializeSudokuScore()
-    {
-        for (ushort i = 0; i < 9; i++)
-        {
-            _heuristicScores[i] = Evaluate(_currentPuzzle!.GetRowValues(i));
-            _heuristicScores[9 + i] = Evaluate(_currentPuzzle.GetColumnValues(i));
+    public ushort InitHeuristicScore() {
+        ushort score = 0;
+
+        for (ushort i = 0; i < 9; i++) {
+            // Separate computation to reduce complexity.
+            ushort column = Evaluate(_activeSudoku!.GetColumnValues(i));
+            ushort row = Evaluate(_activeSudoku.GetRowValues(i));
+
+            _heuristicScores[i] = column;
+            _heuristicScores[9 + i] = row;
+
+            score += (ushort)(column + row);
         }
-        return GetHeuristicScore();
+
+        return score;
     }
 
     /// <summary>
@@ -62,34 +72,32 @@ public class SudokuSolver
     }
 
     /// <summary>
-    /// Adds all the _heuristicScores values
-    /// </summary>
-    /// <returns>Returns the heuristics Score for the sudoku board</returns>
-    public ushort GetHeuristicScore()
-    {
-        ushort score = 0;
-        for (int i = 0; i < _heuristicScores.Length; i++)
-        {
-            score += _heuristicScores[i];
-        }
-
-        return score;
-    }
-
-    /// <summary>
     /// Given a row and column update the scores list
     /// </summary>
     /// <returns>Updated sudoku game heuristic score</returns>
     public ushort UpdateHeuristicScore((ushort column, ushort row) coord1, (ushort column, ushort row) coord2) {
-        // (0,7) -> (1,8)
-
-        _heuristicScores[coord1.column] = Evaluate(_currentPuzzle!.GetColumnValues(coord1.column));
-        _heuristicScores[coord1.row + 9] = Evaluate(_currentPuzzle.GetRowValues(coord1.row));
-
-        _heuristicScores[coord2.column] = Evaluate(_currentPuzzle.GetColumnValues(coord2.column));
-        _heuristicScores[coord1.row + 9] = Evaluate(_currentPuzzle.GetRowValues(coord2.row));
-
+        // First value
+        _heuristicScores[coord1.column] = Evaluate(_activeSudoku.GetColumnValues(coord1.column));
+        _heuristicScores[coord1.row + 9] = Evaluate(_activeSudoku.GetRowValues(coord1.row));
+        // Second value
+        _heuristicScores[coord2.column] = Evaluate(_activeSudoku.GetColumnValues(coord2.column));
+        _heuristicScores[coord2.row + 9] = Evaluate(_activeSudoku.GetRowValues(coord2.row));
+        
+        // Calculate the update heuristic score of all rows and columns.
         return GetHeuristicScore();
+    }
+
+    /// <summary>
+    /// Computes the sum of all heuristic values.
+    /// </summary>
+    public ushort GetHeuristicScore() {
+        ushort score = 0;
+
+        for (ushort i = 0; i < _heuristicScores.Length; i++) {
+            score += _heuristicScores[i];
+        }
+
+        return score;
     }
 
     /// <summary>
@@ -103,14 +111,14 @@ public class SudokuSolver
         // Randomly select a cluster
         ushort clusterIndex = (ushort)new Random().Next(0, 9);
 
-        HashSet<(ushort, ushort)> nonFixedPositions = _currentPuzzle!.GetSudokuGrid()[clusterIndex].RetrieveInvalidCells();
+        HashSet<(ushort, ushort)> nonFixedPositions = _activeSudoku!.GetSudokuGrid()[clusterIndex].RetrieveInvalidCells();
 
         for (int i = 0; i < nonFixedPositions.Count; i++)
         {
             for (int j = i + 1; j < nonFixedPositions.Count; j++)
             {
-                Sudoku clone = (Sudoku)_currentPuzzle!.Clone();
-                Sudoku old = (Sudoku)_currentPuzzle.Clone();
+                Sudoku clone = (Sudoku)_activeSudoku!.Clone();
+                Sudoku old = (Sudoku)_activeSudoku.Clone();
                 SudokuCluster cluster = clone.GetSudokuGrid()[clusterIndex];
 
                 (ushort, ushort) cell1 = nonFixedPositions.ElementAt(i);
@@ -118,7 +126,7 @@ public class SudokuSolver
 
                 cluster.SwapCells(cell1, cell2);
 
-                _currentPuzzle = (Sudoku)clone.Clone();
+                _activeSudoku = (Sudoku)clone.Clone();
 
                 // column, row -> 5
                 (ushort, ushort) c1 = ((ushort)(cell1.Item1 + clusterIndex % 3 * 3), (ushort)(cell1.Item2 + clusterIndex / 3 * 3));
@@ -127,7 +135,7 @@ public class SudokuSolver
                 ushort tempScore = UpdateHeuristicScore(c1, c2); 
                 successors.Add((clone, tempScore));
 
-                _currentPuzzle = (Sudoku)old.Clone();
+                _activeSudoku = (Sudoku)old.Clone();
             }
         }
 
@@ -139,7 +147,7 @@ public class SudokuSolver
 
     public void RandomWalk() {
         //Implement a random walk of LocalMaxTokens steps
-        Sudoku clone = (Sudoku)_currentPuzzle!.Clone();
+        Sudoku clone = (Sudoku)_activeSudoku!.Clone();
 
         for (int i = 0; i < RandomWalkTokens; i++)
         {
@@ -157,58 +165,41 @@ public class SudokuSolver
 
             List<(Sudoku, ushort)> successors = GetSuccessorsOrderedByScore();
 
-            _currentPuzzle = (Sudoku)successors[random.Next(0, successors.Count)].Item1.Clone();
+            _activeSudoku = (Sudoku)successors[random.Next(0, successors.Count)].Item1.Clone();
         }
-        //_currentPuzzle = clone;
-        ushort randomWalkScore = InitializeSudokuScore();
+        //_activeSudoku = clone;
+        ushort randomWalkScore = InitHeuristicScore();
     }
 
     /// <summary>
     /// Prints the statistics for the hillclimb algorithm during runtime
-    /// </summary>
-    /// <param name="startedFrom"></param>
-    /// <param name="tempBestScore"></param>
-    /// <param name="randomWalkCounter"></param>
-    public void PrintHillClimbStats(int startedFrom, ushort tempBestScore, int randomWalkCounter)
-    {
+    /// </summary>-
+    public void PrintHillClimbStats(ushort eval) {
         int startX = Console.CursorLeft;
         int startY = Console.CursorTop;
-        Console.WriteLine($"┌───────────────────────────────┐");
-        Console.WriteLine($"│ Started from: {startedFrom}\t\t│");
-        Console.WriteLine($"│ Current local score: {tempBestScore}\t│");
-        Console.WriteLine($"│ Random walks: {randomWalkCounter}\t\t│");
-        Console.WriteLine($"│ Random walks steps: {randomWalkCounter * RandomWalkTokens}\t\t│");
-        Console.WriteLine($"│ Global best score: {bestScore}\t\t│");
-        Console.WriteLine($"└───────────────────────────────┘");
 
-        _currentPuzzle!.Print();
+        Console.WriteLine("┌───────────────────────────────┐");
+        Console.WriteLine($"│ Eval: {eval}, Best: {_bestScore}\t\t│");
+        Console.WriteLine($"│ Iterations: {_iterations}\t\t│");
+        Console.WriteLine($"│ Random walks: {_walksEntered}\t\t│");
+        Console.WriteLine($"│ Total walk steps: {_walksEntered * RandomWalkTokens}\t│");
+        Console.WriteLine("└───────────────────────────────┘");
+
+        _activeSudoku.Show();
         Console.SetCursorPosition(startX, startY);
     }
 
     /// <summary>
     /// Solves the sudoku using the Random Restart Hill Climbing algorithm
     /// </summary>
-    public void HillClimbing()
-    {
-        //_currentPuzzle.Print();
-        //Console.WriteLine(InitializeSudokuScore());
-
-        //Sudoku newSudoku = (Sudoku)_currentPuzzle.Clone();
-        //newSudoku.Print();
-
-        //_currentPuzzle = (Sudoku)newSudoku.Clone();
-        //Console.WriteLine();
-        //Console.WriteLine(InitializeSudokuScore());
-
-
+    public void HillClimbing() {
         int consecutiveIterationsWithoutImprovement = 0;
-        int iterations = 0;
-        int randomWalkCounter = 0;
-        int startedFrom = 0;
-        Sudoku currentBestSolution = (Sudoku)_currentPuzzle.Clone();
-        ushort tempBestScore = bestScore;
+        // int iterations = 0;
+        // int randomWalkCounter = 0;
+        Sudoku currentBestSolution = (Sudoku)_activeSudoku.Clone();
+        ushort tempBestScore = _bestScore;
 
-        while (bestScore != 0 && iterations < MaxIterations)
+        while (_bestScore > 0)
         {
             // Generate the successors ordered by score
             List<(Sudoku, ushort)> successors = GetSuccessorsOrderedByScore();
@@ -216,20 +207,22 @@ public class SudokuSolver
             if (successors[0].Item2 < tempBestScore)
             {
                 // Update the current sudoku with the best successor
-                _currentPuzzle = (Sudoku) successors[0].Item1.Clone();
+                _activeSudoku = (Sudoku) successors[0].Item1.Clone();
   
                 // Update the score
                 tempBestScore = successors[0].Item2;
 
                 //If local solution is best
-                if (tempBestScore < bestScore)
+                if (tempBestScore < _bestScore)
                 {
-                    bestScore = tempBestScore;
-                    currentBestSolution = (Sudoku)_currentPuzzle!.Clone();
+                    _bestScore = tempBestScore;
+                    currentBestSolution = (Sudoku)_activeSudoku.Clone();
                 }
 
-                PrintHillClimbStats(startedFrom, tempBestScore, randomWalkCounter);
-
+                // Show the current state of the sudoku grid every 100 iterations.
+                if (_iterations % 100 == 0) {
+                    PrintHillClimbStats(tempBestScore);
+                }
             }
             //When on a local maximum or a plateau
             else
@@ -240,81 +233,29 @@ public class SudokuSolver
                 // Check if it's time to initiate a random walk
                 if (consecutiveIterationsWithoutImprovement >= LocalMaxTokens)
                 {
-                    //Did the random walk have a higher local optimum, return to the previous local maximum
-                    if (tempBestScore > bestScore)
-                    {
-                        _currentPuzzle = (Sudoku)currentBestSolution!.Clone(); ;
-                    }
-                    ushort bestScoreTest = InitializeSudokuScore();
                     // Perform a random walk
                     RandomWalk();
-                    tempBestScore = InitializeSudokuScore();
-                    startedFrom = tempBestScore;
+                    // Console.WriteLine(InitHeuristicScore());
+                    tempBestScore = InitHeuristicScore();
+                    // Console.WriteLine(ttempBestScore);
+
+                    //Did the random walk have a higher local optimum, return to the previous local maximum
+                    if (tempBestScore > _bestScore)
+                    {
+                        _activeSudoku = (Sudoku)currentBestSolution!.Clone(); ;
+                    }
+
+                    // Console.WriteLine(ttempBestScore);
+
+                    ushort bestScoreTest = InitHeuristicScore();
                     consecutiveIterationsWithoutImprovement = 0; // Reset the counter
-                    randomWalkCounter++;
+                    _walksEntered++;
                 }
             }
-            iterations++;
+            _iterations++;
         }
-        Console.WriteLine($"Best found Score: {bestScore}                             ");
-        currentBestSolution!.Print();
-        //}
+
+        Console.WriteLine($"Best found Score: {_bestScore}                             ");
+        currentBestSolution!.Show();
     }
 }
-
-
-            
-            //// Restart the algorithm until the sudoku is solved or the max iterations are reached
-            //while (bestScore != 0 && maxIterations > 0)
-            //{
-            //    // Generate the successors ordered by score
-            //    List<(Sudoku, ushort)> successors = GetSuccessorsOrderedByScore();
-
-//                if (random.NextDouble() > BiasedProbabilty)
-//                {
-//                    (Sudoku, ushort) randomSuccesor = successors[random.Next(0, successors.Count)];
-//                    // Update the current sudoku with the best successor
-//                    _currentPuzzle = randomSuccesor.Item1;
-//                    // Update the score
-//                    tempBestScore = randomSuccesor.Item2;
-//                    // Decrease the number of random walk tokens
-//                    int startX = Console.CursorLeft;
-//                    int startY = Console.CursorTop;
-//                    Console.WriteLine($"Random Chosen score: {tempBestScore}                         ");
-//                    _currentPuzzle.Print();
-//                    Console.SetCursorPosition(startX, startY);
-//                }
-//                // Check if the best successor has a better score
-//                else if (successors[0].Item2 < tempBestScore)
-//                {
-//                    // Update the current sudoku with the best successor
-//                    _currentPuzzle = successors[0].Item1;
-//                    // Update the score
-//                    tempBestScore = successors[0].Item2;
-          
-//                    int startX = Console.CursorLeft;
-//                    int startY = Console.CursorTop;
-//                    Console.WriteLine($"Current score: {tempBestScore}                                     ");
-//                    _currentPuzzle.Print();
-//                    Console.SetCursorPosition(startX, startY);
-//                }
-//                else
-//                {
-//                    // No improvement in score
-//                    consecutiveIterationsWithoutImprovement++;
-
-//                    // Check if it's time to initiate a random walk
-//                    if (consecutiveIterationsWithoutImprovement >= LocalMaxTokens)
-//                    {
-//                        // Perform a random walk
-//                        RandomWalk();
-//                        consecutiveIterationsWithoutImprovement = 0; // Reset the counter
-//                    }
-//                }
-
-//                iterations++;
-//            }
-          
-//     }
-   
-//}
