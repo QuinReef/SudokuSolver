@@ -4,21 +4,21 @@ public class Application {
     public static void Main(string[] args) {
         // Retrieve the sudoku to solve from the user.
         int? grid = SelectGrid();
-
+        
         // Read the selected sudoku puzzle from the input file.
         string input = ReadInputFile(grid);
-
+        
         // Clear user input.
         Console.Clear();
-
+        
         // Load the selected sudoku, and execute the program logic.
         Sudoku sudoku = new(input);
         sudoku.Load();
         // sudoku.Show();
-
+        
         SudokuSolver solver = new(sudoku, 5);
         solver.HillClimbing();
-
+        
         Console.ReadLine();
     }
 
