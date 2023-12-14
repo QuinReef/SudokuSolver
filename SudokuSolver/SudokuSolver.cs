@@ -215,7 +215,7 @@ public class SudokuSolver {
                 tempBestScore = successors[0].Item2;
 
                 //If local solution is best
-                if (tempBestScore < _bestScore)
+                if (tempBestScore <= _bestScore)
                 {
                     _bestScore = tempBestScore;
                     currentBestSolution = (Sudoku)_activeSudoku.Clone();
