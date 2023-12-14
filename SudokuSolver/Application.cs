@@ -14,7 +14,14 @@ public class Application {
         // Load the selected sudoku, and execute the program logic.
         Sudoku sudoku = new(input);
         sudoku.Load();
-        // sudoku.Show();
+        //sudoku.Show();
+
+        //Sudoku s = (Sudoku)sudoku.Clone();
+
+        //sudoku.GetSudokuGrid()[0].SwapCells((0, 0), (2, 2));
+        //sudoku.Show();
+        //s.Show();
+
         
         SudokuSolver solver = new(sudoku, 5);
         solver.HillClimbing();

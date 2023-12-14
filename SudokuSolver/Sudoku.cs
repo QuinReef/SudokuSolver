@@ -227,12 +227,18 @@ public class SudokuCluster : ICloneable {
     }
 
     // The implementation of Clone() from the ICloneable interface to enable deep-copying.
-    public object Clone() {
-        return new SudokuCluster() {
-            _cells = this._cells,
-            _availableValues = this._availableValues,
-            _fixedPositions = this._fixedPositions,
-            _emptyCells = this._emptyCells
+    public object Clone()
+    {
+        SudokuCluster clonedCluster = new SudokuCluster
+        {
+            _cells = new ushort[3, 3],
+            _emptyCells = new HashSet<(ushort, ushort)>(_emptyCells),
+            _fixedPositions = new HashSet<(ushort, ushort)>(_fixedPositions),
+            _availableValues = new HashSet<ushort>(_availableValues)
         };
+
+        Array.Copy(_cells, clonedCluster._cells, _cells.Length);
+
+        return clonedCluster;
     }
 }

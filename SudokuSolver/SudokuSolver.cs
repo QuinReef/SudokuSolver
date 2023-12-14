@@ -8,8 +8,8 @@ public class SudokuSolver {
     // The heuristicvalues of each row and column.
     private ushort[] _heuristicScores = new ushort[18];
 
-    private ushort RandomWalkTokens = 5;
-    private ushort LocalMaxTokens = 9;
+    private ushort RandomWalkTokens = 3;
+    private ushort LocalMaxTokens = 40;
 
     // Statistics to print to the console.
     private ushort _bestScore;
@@ -53,7 +53,7 @@ public class SudokuSolver {
     /// <summary>
     /// Initialises the initial heuristic values.
     /// </summary>
-    public ushort InitHeuristicScore(Sudoku sudoku) {
+    public ushort InitHeuristicScore2(Sudoku sudoku) {
         ushort score = 0;
 
         for (ushort i = 0; i < 9; i++) {
@@ -61,10 +61,33 @@ public class SudokuSolver {
             ushort column = Evaluate(sudoku.GetColumnValues(i));
             ushort row = Evaluate(sudoku.GetRowValues(i));
 
+            
             _heuristicScores[i] = column;
             _heuristicScores[9 + i] = row;
 
             score += (ushort)(column + row);
+        }
+
+        return score;
+    }
+    /// <summary>
+    /// Initialises the initial heuristic values.
+    /// </summary>
+    public ushort InitHeuristicScore(Sudoku sudoku)
+    {
+        ushort score = 0;
+
+        for (ushort i = 0; i < 9; i++)
+        {
+            // Separate computation to reduce complexity.
+            ushort[] columValues = sudoku.GetColumnValues(i);
+            ushort[] rowValues = sudoku.GetRowValues(i);
+
+            HashSet<ushort> columnUniques = columValues.ToHashSet();
+            score += (ushort)(9 - columnUniques.Count);
+
+            HashSet<ushort> rowUniques = rowValues.ToHashSet();
+            score += (ushort)(9 - rowUniques.Count);
         }
 
         return score;
@@ -136,34 +159,38 @@ public class SudokuSolver {
                 ushort tmpScore = UpdateHeuristicScore(c1, c2);
                 ushort tempScore = InitHeuristicScore(s);
                 successors.Add((s, tempScore));
+                
             }
         }
 
         // Order successors by improved score (ascending order)
         successors = successors.OrderBy(successor => successor.Item2).ToList();
-        InitHeuristicScore(successors[0].Item1); // 1
-        ushort w = successors[0].Item2;          // 2
+
 
         return successors;
     }
 
+    
+
+
     /// <summary>
     /// Prints the statistics for the hillclimb algorithm during runtime
     /// </summary>-
-    public void PrintHillClimbStats(ushort eval) {
-        int startX = Console.CursorLeft;
-        int startY = Console.CursorTop;
-
+    public void PrintHillClimbStats(ushort eval, ushort localMax) {
+        //int startX = Console.CursorLeft;
+        //int startY = Console.CursorTop;
+        Console.Clear();
         Console.WriteLine("┌───────────────────────────────┐");
         Console.WriteLine($"│ Timer: {_timer.Elapsed}\t│");
-        Console.WriteLine($"│ Eval: {eval}, Best: {_bestScore}\t\t│");
+        Console.WriteLine($"│ Eval: {eval}, From: {localMax}\t\t│");
+        Console.WriteLine($"│               Best: {_bestScore}\t\t│");
         Console.WriteLine($"│ Iterations: {_iterations}\t\t│");
         Console.WriteLine($"│ Random walks: {_walksEntered}\t\t│");
         Console.WriteLine($"│ Total walk steps: {_walksEntered * RandomWalkTokens}\t│");
         Console.WriteLine("└───────────────────────────────┘");
 
         _activeSudoku.Show();
-        Console.SetCursorPosition(startX, startY);
+        //Console.SetCursorPosition(startX, startY);
     }
 
     /// <summary>
@@ -173,7 +200,7 @@ public class SudokuSolver {
         int consecutiveIterationsWithoutImprovement = 0;
 
         ushort tempBestScore = _bestScore;
-
+        ushort localMax = _bestScore;
         Sudoku currentBestSolution = (Sudoku)_activeSudoku.Clone();
 
         while (_bestScore > 0) {
@@ -183,10 +210,6 @@ public class SudokuSolver {
             if (successors[0].Item2 < tempBestScore) {
                 // Update the current sudoku with the best successor
                 _activeSudoku = (Sudoku)successors[0].Item1.Clone();
-
-                ushort t = InitHeuristicScore(_activeSudoku);
-                ushort s = InitHeuristicScore(successors[0].Item1);
-                ushort w = (successors[0].Item2); // tempscore van de ideale
 
                 // Update the score
                 tempBestScore = successors[0].Item2;
@@ -199,13 +222,7 @@ public class SudokuSolver {
                 }
 
                 // Show the current state of the sudoku grid every 100 iterations.
-                if (_iterations % 100 == 0) {
-                    /* Temporarily stop the timer while printing the current state,
-                       because we do not wish to count that towards the time complexity. */
-                    _timer.Stop();
-                    PrintHillClimbStats(tempBestScore);
-                    _timer.Start();
-                }
+                
             }
 
             //When on a local maximum or a plateau
@@ -217,24 +234,32 @@ public class SudokuSolver {
                 if (consecutiveIterationsWithoutImprovement >= LocalMaxTokens)
                 {
                     //Did the random walk have a higher local optimum, return to the previous local maximum
-                    if (tempBestScore > _bestScore) {
+                    if (tempBestScore > _bestScore)
+                    {
+                        
                         _activeSudoku = (Sudoku)currentBestSolution!.Clone(); ;
                     }
-
-                    ushort t = InitHeuristicScore(_activeSudoku);
-
                     // Perform a random walk
                     RandomWalk();
                     // Console.WriteLine(InitHeuristicScore());
                     tempBestScore = InitHeuristicScore(_activeSudoku);
+                    localMax = tempBestScore;
                     // Console.WriteLine(ttempBestScore);
 
                     // Console.WriteLine(ttempBestScore);
-
-                    ushort bestScoreTest = InitHeuristicScore(_activeSudoku);
                     consecutiveIterationsWithoutImprovement = 0; // Reset the counter
                     _walksEntered++;
                 }
+            }
+            if (_iterations % 5000 == 0)
+            {
+                /* Temporarily stop the timer while printing the current state,
+                   because we do not wish to count that towards the time complexity. */
+                _timer.Stop();
+                PrintHillClimbStats(tempBestScore, localMax);
+                Console.WriteLine();
+                currentBestSolution.Show();
+                _timer.Start();
             }
 
             _iterations++;
