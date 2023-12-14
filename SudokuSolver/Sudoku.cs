@@ -66,7 +66,7 @@ public class Sudoku : ICloneable {
         cluster.AddCell((column, row), value);
 
         if (value == 0) {
-            cluster.AddInvalidCell((column, row));
+            cluster.AddEmptyCell((column, row));
         } else {
             cluster.AddFixedPosition((column, row));
             cluster.RemoveAvailableDigit(value);
@@ -135,10 +135,7 @@ public class Sudoku : ICloneable {
         return values;
     }
 
-    /// <summary>
-    /// The implementation of Clone() from the ICloneable interface to enable deep-copying.
-    /// </summary>
-    /// <returns></returns>
+    // The implementation of Clone() from the ICloneable interface to enable deep-copying.
     public object Clone() {
         SudokuCluster[] newclusters = new SudokuCluster[9];
         for (int i = 0; i < _clusters.Length; i++) {
@@ -157,7 +154,7 @@ public class SudokuCluster : ICloneable {
     // All values present within each cell in the cluster.
     private ushort[,] _cells = new ushort[3, 3];
     // All values with incorrect values that still need to be changed.
-    private HashSet<(ushort, ushort)> _invalidCells = new();
+    private HashSet<(ushort, ushort)> _emptyCells = new();
     // All positions in the cluster with a fixed, valid value from the start.
     private HashSet<(ushort, ushort)> _fixedPositions = new();
     // All values 1-9 that are not yet present in the cluster.
@@ -171,32 +168,37 @@ public class SudokuCluster : ICloneable {
     /// <summary>
     /// Retrieves the coordinates of all values with incorrect values that still need to be changed.
     /// </summary>
-    public HashSet<(ushort, ushort)> RetrieveInvalidCells() => _invalidCells;
+    public HashSet<(ushort, ushort)> RetrieveInvalidCells() => _emptyCells;
 
     /// <summary>
-    /// Adds a cell to the cluster with the specified coordinates and value.
+    /// Adds a cell to the cluster.
     /// </summary>
-    public void AddCell((ushort, ushort) coords, ushort val) {
-        _cells[coords.Item1, coords.Item2] = val; // O(1)
+    /// <param name="coord">The coordinates in the 2d cells array at which to insert the value.</param>
+    /// <param name="value">The value that should be inserted in the cell.</param>
+    public void AddCell((ushort, ushort) coord, ushort value) {
+        _cells[coord.Item1, coord.Item2] = value; // O(1)
     }
+
     /// <summary>
-    /// Adds a cell to the set of invalid cells with the specified coordinates.
+    /// Adds the coordinates of a cell to the set of empty cells.
     /// </summary>
-    public void AddInvalidCell((ushort, ushort) coord) {
-        _invalidCells.Add(coord); // O(1) -> add on hash set
+    public void AddEmptyCell((ushort, ushort) coord) {
+        _emptyCells.Add(coord); // O(1) -> add on hash set
     }
+
     /// <summary>
-    /// Adds a cell to the set of non fixed cells with the specified coordinates.
+    /// Adds the coordinates of a cell to the set of non-fixed cells.
     /// </summary>
     public void AddFixedPosition((ushort, ushort) coord) {
         _fixedPositions.Add(coord);
-    }
+    } // O(1)
+
     /// <summary>
-    /// Adds a value to the set of free cluster digits
+    /// Adds a value to the set of available values in the cluster.
     /// </summary>
     public void RemoveAvailableDigit(ushort value) {
         _availableValues.Remove(value);
-    }
+    } // O(1)
 
     /// <summary>
     /// Swaps the values of two cells in the cluster.
@@ -212,18 +214,8 @@ public class SudokuCluster : ICloneable {
     public SudokuCluster FillMissingValues() {
         Random random = new();
 
-        // Temporary set of all empty positions in the cluster.
-        HashSet<(ushort, ushort)> empties = new();
-        for (ushort x = 0; x < 3; x++) {
-            for (ushort y = 0; y < 3; y++) {
-                if (_cells[x, y] == 0) {
-                    empties.Add((x, y));
-                }
-            }
-        }
-
         // For each empty position in a cluster, randomly generate a valid value.
-        foreach ((ushort x, ushort y) in empties) {
+        foreach ((ushort x, ushort y) in _emptyCells) {
             int index = random.Next(_availableValues.Count);
             ushort num = _availableValues.ElementAt(index);
             _cells[x, y] = num;
@@ -239,7 +231,7 @@ public class SudokuCluster : ICloneable {
             _cells = this._cells,
             _availableValues = this._availableValues,
             _fixedPositions = this._fixedPositions,
-            _invalidCells = this._invalidCells
+            _emptyCells = this._emptyCells
         };
     }
 }
