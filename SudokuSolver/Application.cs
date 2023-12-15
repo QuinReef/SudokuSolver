@@ -22,11 +22,10 @@ public class Application {
         //sudoku.Show();
         //s.Show();
 
-        
-        SudokuSolver solver = new(sudoku, 5);
+        SudokuSolver solver = new(sudoku, 2);
         solver.HillClimbing();
         
-        Console.ReadLine();
+        // Console.ReadLine();
     }
 
     private static int? SelectGrid() {
