@@ -2,18 +2,34 @@
 
 public class Application {
     public static void Main(string[] args) {
-        // Retrieve the sudoku to solve from the user.
+
+        while (true)
+        {
+            // Clear the console.
+            Console.Clear();
+            // Execute the program logic.
+            Execute();
+            // Wait for user input to continue.
+            Console.WriteLine("Press any key to continue...");
+            Console.ReadKey();
+        }
+       
+    }
+
+    private static void Execute()
+    {
+        // Retrieve the sudoku to solve from the user
         int? grid = SelectGrid();
         /* Determine whether to show the calculations during execution,
            or to solely solve the sudoku, only printing the final result. */
         bool showSteps = DetermineOutput();
-        
+
         // Read the selected sudoku puzzle from the input file.
         string input = ReadInputFile(grid);
-        
+
         // Clear user input.
         Console.Clear();
-        
+
         // Load the selected sudoku, and execute the program logic.
         Sudoku sudoku = new(input);
         sudoku.Load();
@@ -23,8 +39,8 @@ public class Application {
         solver.Start();
 
 
-         //Experiment experiment = new();
-         //experiment.TestSudokuWalkSize(sudoku);
+        //Experiment experiment = new();
+        //experiment.TestSudokuWalkSize(sudoku);
     }
 
     private static int? SelectGrid() {

@@ -19,17 +19,17 @@ public class SudokuSolver {
 
     // Timer to measure total time complexity.
     private Stopwatch _timer = new();
+
     // Instance for random values with an optional seed for consistent results.
     private const int seed = 53;
     private readonly Random _random = new(seed);
 
-    public SudokuSolver(Sudoku sudoku, ushort walks, bool showSteps) {
+    public SudokuSolver(Sudoku sudoku, ushort walks, bool showSteps)
+    {
         _activeSudoku = sudoku;
-
         _showSteps = showSteps;
         _randomWalks = walks;
         _bestScore = InitHeuristics(sudoku);
-
         _timer.Start();
     }
 

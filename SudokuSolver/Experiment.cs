@@ -2,14 +2,20 @@
 
 public class Experiment
 {
+    //list of random walk sizes to test with
     private List<ushort> _randomWalkExperimentSizes =
         new() {9};
+    //list of sample sizes to test with
     private List<ushort> _sampleSizes = new() {25};
     public Experiment()
     {
  
     }
 
+    /// <summary>
+    /// Function to test the effect of the random walk size on the time it takes to solve a sudoku.
+    /// </summary>
+    /// <param name="subject"></param>
     public void TestSudokuWalkSize(Sudoku subject)
     {
         using (StreamWriter writer = new StreamWriter($"../../../testSizeResults5.txt"))
