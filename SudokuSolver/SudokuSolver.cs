@@ -22,12 +22,12 @@ public class SudokuSolver {
     private const int seed = 53;
     private readonly Random _random = new(seed);
 
-    public SudokuSolver(Sudoku s, ushort walks, bool showSteps) {
-        _activeSudoku = s;
+    public SudokuSolver(Sudoku sudoku, ushort walks, bool showSteps) {
+        _activeSudoku = sudoku;
 
         _showSteps = showSteps;
         _randomWalks = walks;
-        _bestScore = InitHeuristics(s);
+        _bestScore = InitHeuristics(sudoku);
 
         _timer.Start();
     }
@@ -53,7 +53,7 @@ public class SudokuSolver {
     /// <summary>
     /// Initialises the initial heuristic values.
     /// </summary>
-    public ushort InitHeuristics(Sudoku sudoku) {
+    private ushort InitHeuristics(Sudoku sudoku) {
         ushort score = 0;
 
         for (ushort i = 0; i < 9; i++) {
@@ -73,7 +73,7 @@ public class SudokuSolver {
     /// <summary>
     /// Updates the heuristic values of a sudoku puzzle after two cells were swapped.
     /// </summary>
-    public ushort UpdateHeuristics(Sudoku sudoku, (ushort column, ushort row) coord1, (ushort column, ushort row) coord2) {
+    private ushort UpdateHeuristics(Sudoku sudoku, (ushort column, ushort row) coord1, (ushort column, ushort row) coord2) {
         // First value
         sudoku.GetHeuristicValues()[coord1.column] = Evaluate(sudoku.GetColumnValues(coord1.column));
         sudoku.GetHeuristicValues()[coord1.row + 9] = Evaluate(sudoku.GetRowValues(coord1.row));
@@ -85,7 +85,6 @@ public class SudokuSolver {
         return ComputeSum(sudoku.GetHeuristicValues());
     }
 
-    // Computes the sum of the given array.
     private ushort ComputeSum(ushort[] values) {
         ushort total = 0;
 
@@ -97,7 +96,7 @@ public class SudokuSolver {
     }
 
     /// <summary>
-    /// Solves the sudoku using the Random Restart Hill Climbing algorithm
+    /// Performs the hill-climbing algorithm with a random-walk implementation.
     /// </summary>
     public long Start() {
         int consecutiveIterationsWithoutImprovement = 0;
@@ -158,58 +157,62 @@ public class SudokuSolver {
     }
 
     /// <summary>
-    /// Generates the succesors ordered by ascending heuristic value
+    /// Determines the best successor of a current <see cref="Sudoku"/> state.
     /// </summary>
-    public (Sudoku, ushort) DetermineBestSuccessor() {
-        (Sudoku sudoku, ushort currentBestFitness) bestSuccessor = new(_activeSudoku, ushort.MaxValue);
+    private (Sudoku, ushort) DetermineBestSuccessor() {
+        (Sudoku, ushort) bestSuccessor = new(_activeSudoku, ushort.MaxValue);
+        (ushort, ushort) c1 = new(), c2 = new();
 
-        // Randomly select a cluster
-        ushort clusterIndex = (ushort)new Random().Next(0, 9);
+        // Randomly select a cluster.
+        ushort clusterIndex = (ushort)_random.Next(0, 9);
 
-        (ushort, ushort) ce1 = new(), ce2 = new();
+        HashSet<(ushort, ushort)> invalidPositions = _activeSudoku.GetSudokuGrid()[clusterIndex].RetrieveInvalidCells();
 
-        HashSet<(ushort, ushort)> nonFixedPositions = _activeSudoku.GetSudokuGrid()[clusterIndex].RetrieveInvalidCells();
-
-        for (int i = 0; i < nonFixedPositions.Count; i++) {
-            for (int j = i + 1; j < nonFixedPositions.Count; j++) {
+        for (int i = 0; i < invalidPositions.Count; i++) {
+            for (int j = i + 1; j < invalidPositions.Count; j++) {
                 Sudoku clone = (Sudoku)_activeSudoku.Clone();
                 SudokuCluster cluster = clone.GetSudokuGrid()[clusterIndex];
 
-                (ushort, ushort) cell1 = nonFixedPositions.ElementAt(i);
-                (ushort, ushort) cell2 = nonFixedPositions.ElementAt(j);
-
+                // Determine two cells to swap within a cluster.
+                (ushort, ushort) cell1 = invalidPositions.ElementAt(i);
+                (ushort, ushort) cell2 = invalidPositions.ElementAt(j);
                 cluster.SwapCells(cell1, cell2);
 
-                (ushort, ushort) c1 = ((ushort)(cell1.Item1 + clusterIndex % 3 * 3), (ushort)(cell1.Item2 + (clusterIndex / 3) * 3));
-                (ushort, ushort) c2 = ((ushort)(cell2.Item1 + clusterIndex % 3 * 3), (ushort)(cell2.Item2 + (clusterIndex / 3) * 3));
+                /* Adjust the cell's coordinates to apply to a whole sudoku grid (9x9),
+                   rather than a single cluster (3x3) */
+                c1 = ((ushort)(cell1.Item1 + clusterIndex % 3 * 3), (ushort)(cell1.Item2 + (clusterIndex / 3) * 3));
+                c2 = ((ushort)(cell2.Item1 + clusterIndex % 3 * 3), (ushort)(cell2.Item2 + (clusterIndex / 3) * 3));
 
                 ushort tempScore = UpdateHeuristics(clone, c1, c2);
 
-                if (tempScore < bestSuccessor.currentBestFitness) {
-                    ce1 = c1; ce2 = c2;
+                // Only adjust the best successor if an improvement has been found.
+                if (tempScore < bestSuccessor.Item2) {
                     bestSuccessor = (clone, tempScore);
                 }
             }
         }
 
-        UpdateHeuristics(bestSuccessor.sudoku, ce1, ce2);
+        UpdateHeuristics(bestSuccessor.Item1, c1, c2);
         return bestSuccessor;
     }
 
     /// <summary>
     /// Performs a random walk if the algorithm is stuck on a local maximum or plateau.
     /// </summary>
-    public void RandomWalk() {
+    private void RandomWalk() {
         for (int i = 0; i < _randomWalks; i++) {
-            //// Randomly select a cluster
+            // Randomly select a cluster.
             ushort clusterIndex = (ushort)_random.Next(0, 9);
 
             SudokuCluster cluster = _activeSudoku.GetSudokuGrid()[clusterIndex];
-            HashSet<(ushort, ushort)> nonFixedPositions = cluster.RetrieveInvalidCells();
+            HashSet<(ushort, ushort)> invalidPositions = cluster.RetrieveInvalidCells();
 
-            (ushort, ushort) cell1 = nonFixedPositions.ElementAt(_random.Next(0, nonFixedPositions.Count));
+            // Randomly select two cells to swap.
+            (ushort, ushort) cell1 = invalidPositions.ElementAt(_random.Next(0, invalidPositions.Count));
             (ushort, ushort) cell2;
-            do cell2 = nonFixedPositions.ElementAt(_random.Next(0, nonFixedPositions.Count));
+            do 
+                // Make sure the two randomly selected cells are not equal.
+                cell2 = invalidPositions.ElementAt(_random.Next(0, invalidPositions.Count));
             while (cell1 == cell2);
 
             cluster.SwapCells(cell1, cell2);
@@ -217,10 +220,11 @@ public class SudokuSolver {
     }
 
     /// <summary>
-    /// Prints the statistics for the hillclimb algorithm during runtime
+    /// Occasionally prints the current state of the sudoku puzzle to the console with relevant statistics.
     /// </summary>
-    public void PrintHillClimbStats(ushort eval, ushort localMax) {
-        // Temporarily stop the timer to capture the true processing time.
+    private void PrintHillClimbStats(ushort eval, ushort localMax) {
+        /* Temporarily stop the timer to solely include computation time,
+           as printing takes a considerable amount of time. */
         _timer.Stop();
 
         if (_timer.ElapsedMilliseconds % 500 == 0) {
@@ -231,7 +235,6 @@ public class SudokuSolver {
             Console.WriteLine($"│               Best: {_bestScore}\t\t│");
             Console.WriteLine($"│ Iterations: {_iterations}\t\t│");
             Console.WriteLine($"│ Random walks: {_walksEntered}\t\t│");
-            Console.WriteLine($"│ Total walk steps: {_walksEntered * _randomWalks}\t│");
             Console.WriteLine("└───────────────────────────────┘");
             _activeSudoku.Show();
         }
@@ -240,26 +243,33 @@ public class SudokuSolver {
     }
 
     /// <summary>
-    /// Print the elapsed time to the console
+    /// Prints the active run time of the algorithm to the console.
     /// </summary>
-    public void ShowElapsedTime() {
+    private void ShowElapsedTime() {
         if (_timer.ElapsedMilliseconds % 10 == 0) {
             _timer.Stop();
 
             Console.SetCursorPosition(0, 0);
             Console.WriteLine($"Current Time: {_timer.Elapsed}");
-            _timer.Start();
 
+            _timer.Start();
         }
     }
 
     /// <summary>
-    /// Prints the final result to the console
+    /// Prints the final, solved state to the console with some relevant statistics.
     /// </summary>
-    /// <param name="finalSolution"></param>
-    public void ShowFinalResult(Sudoku finalSolution) {
-        Console.WriteLine($"Total Time: {_timer.Elapsed}                             ");
-        Console.WriteLine($"Best found Score: {_bestScore}                           ");
-        finalSolution.Show();
+    private void ShowFinalResult(Sudoku solution) {
+        // Clear previous computations and statistics.
+        Console.Clear();
+
+        Console.WriteLine("┌───────────────────────────────┐");
+        Console.WriteLine($"│ Total Time: {_timer.Elapsed}\t│");
+        Console.WriteLine($"│ Best Score: {_bestScore}\t\t\t│");
+        Console.WriteLine($"│ Iterations: {_iterations}\t\t│");
+        Console.WriteLine($"│ Random walks: {_walksEntered}\t\t│");
+        Console.WriteLine("└───────────────────────────────┘");
+
+        solution.Show();
     }
 }

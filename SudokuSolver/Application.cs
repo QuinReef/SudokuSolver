@@ -42,11 +42,12 @@ public class Application {
     }
 
     private static bool DetermineOutput() {
-        Console.Write("Show intermediate steps (Y/N): ");
+        Console.Write("Show intermediate steps (y/n): ");
         char input = char.ToUpper(Console.ReadKey().KeyChar);
 
         // Enter recursion if the input was invalid.
         if (input != 'Y' && input != 'N') {
+            Console.WriteLine();
             Console.WriteLine("Invalid option input.", Console.ForegroundColor = ConsoleColor.Red);
             Console.ResetColor();
             return DetermineOutput();
