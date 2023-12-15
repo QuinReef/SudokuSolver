@@ -2,7 +2,6 @@
 
 public class Application {
     public static void Main(string[] args) {
-
         while (true) {
             // Clear the console.
             Console.Clear();
