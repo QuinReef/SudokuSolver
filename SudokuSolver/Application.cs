@@ -19,12 +19,12 @@ public class Application {
         sudoku.Load();
 
         // Solve the sudoku using ILS.
-        SudokuSolver solver = new(sudoku, 2, showSteps);
+        SudokuSolver solver = new(sudoku, 5, showSteps);
         solver.Start();
 
 
-        // Experiment experiment = new();
-        // experiment.TestSudokuWalkSize(sudoku);
+         //Experiment experiment = new();
+         //experiment.TestSudokuWalkSize(sudoku);
     }
 
     private static int? SelectGrid() {

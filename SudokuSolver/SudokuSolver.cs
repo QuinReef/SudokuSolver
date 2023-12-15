@@ -104,20 +104,20 @@ public class SudokuSolver {
 
         ushort tempBestScore = _bestScore;
         ushort localMax = _bestScore;
-        Sudoku currentBestSolution = _activeSudoku;
+        Sudoku currentBestSolution = (Sudoku)_activeSudoku.Clone();
 
         while (_bestScore > 0 && _iterations < _maxIterations) {
             (Sudoku, ushort) successor = DetermineBestSuccessor();
 
             // If the found successor is an improvement of the active sudoku..
             if (successor.Item2 < tempBestScore) {
-                _activeSudoku = successor.Item1;
+                _activeSudoku = (Sudoku)successor.Item1.Clone();
                 tempBestScore = successor.Item2;
 
                 // Adjust the best score and solution if the found local score is an improvement.
                 if (tempBestScore <= _bestScore) {
                     _bestScore = tempBestScore;
-                    currentBestSolution = _activeSudoku;
+                    currentBestSolution = (Sudoku)_activeSudoku.Clone();
                 }
             }
 
@@ -129,7 +129,7 @@ public class SudokuSolver {
                 if (consecutiveIterationsWithoutImprovement >= _localMaxLimit) {
                     // Return to the previous local maximum if the random walk has a higher local maximum.
                     if (tempBestScore > _bestScore) {
-                        _activeSudoku = currentBestSolution;
+                        _activeSudoku = (Sudoku)currentBestSolution.Clone();
                     }
 
                     // Perform a random walk.
@@ -188,7 +188,7 @@ public class SudokuSolver {
 
                 // Only adjust the best successor if an improvement has been found.
                 if (tempScore < bestSuccessor.Item2) {
-                    bestSuccessor = (clone, tempScore);
+                    bestSuccessor = ((Sudoku)clone.Clone(), tempScore);
                 }
             }
         }
@@ -200,24 +200,27 @@ public class SudokuSolver {
     /// <summary>
     /// Performs a random walk if the algorithm is stuck on a local maximum or plateau.
     /// </summary>
-    private void RandomWalk() {
-        for (int i = 0; i < _randomWalks; i++) {
-            // Randomly select a cluster.
+    public void RandomWalk()
+    {
+        Sudoku clone = (Sudoku)_activeSudoku.Clone();
+
+        for (int i = 0; i < _randomWalks; i++)
+        {
+            // Randomly select a cluster
             ushort clusterIndex = (ushort)_random.Next(0, 9);
 
-            SudokuCluster cluster = _activeSudoku.GetSudokuGrid()[clusterIndex];
-            HashSet<(ushort, ushort)> invalidPositions = cluster.RetrieveInvalidCells();
+            SudokuCluster cluster = clone.GetSudokuGrid()[clusterIndex];
+            HashSet<(ushort, ushort)> nonFixedPositions = cluster.RetrieveInvalidCells();
 
-            // Randomly select two cells to swap.
-            (ushort, ushort) cell1 = invalidPositions.ElementAt(_random.Next(0, invalidPositions.Count));
+            (ushort, ushort) cell1 = nonFixedPositions.ElementAt(_random.Next(0, nonFixedPositions.Count));
             (ushort, ushort) cell2;
-            do 
-                // Make sure the two randomly selected cells are not equal.
-                cell2 = invalidPositions.ElementAt(_random.Next(0, invalidPositions.Count));
+            do cell2 = nonFixedPositions.ElementAt(_random.Next(0, nonFixedPositions.Count));
             while (cell1 == cell2);
 
             cluster.SwapCells(cell1, cell2);
         }
+
+        _activeSudoku = (Sudoku)clone.Clone();
     }
 
     /// <summary>
