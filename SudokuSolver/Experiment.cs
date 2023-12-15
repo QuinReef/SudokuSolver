@@ -7,10 +7,8 @@ public class Experiment
         new() {9};
     //list of sample sizes to test with
     private List<ushort> _sampleSizes = new() {25};
-    public Experiment()
-    {
- 
-    }
+
+    public Experiment() { }
 
     /// <summary>
     /// Function to test the effect of the random walk size on the time it takes to solve a sudoku.
@@ -27,7 +25,7 @@ public class Experiment
                     writer.Write($"{testSize}:");
                     for (int i = 0; i < sampleSize; i++) {
                         SudokuSolver solver = new((Sudoku)subject.Clone(), testSize, false);
-                        long timeMili = solver.Start();
+                        long timeMili = solver.HillClimbing();
                         writer.Write($"{timeMili},");
                     }
 

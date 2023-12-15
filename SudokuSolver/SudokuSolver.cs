@@ -99,7 +99,7 @@ public class SudokuSolver {
     /// <summary>
     /// Performs the hill-climbing algorithm with a random-walk implementation.
     /// </summary>
-    public long Start() {
+    public long HillClimbing() {
         int consecutiveIterationsWithoutImprovement = 0;
 
         ushort tempBestScore = _bestScore;
@@ -212,9 +212,12 @@ public class SudokuSolver {
             SudokuCluster cluster = clone.GetSudokuGrid()[clusterIndex];
             HashSet<(ushort, ushort)> nonFixedPositions = cluster.RetrieveInvalidCells();
 
+            // Randomly select two cells to swap.
             (ushort, ushort) cell1 = nonFixedPositions.ElementAt(_random.Next(0, nonFixedPositions.Count));
             (ushort, ushort) cell2;
-            do cell2 = nonFixedPositions.ElementAt(_random.Next(0, nonFixedPositions.Count));
+            do
+                // Make sure the two randomly selected cells are not equal.
+                cell2 = nonFixedPositions.ElementAt(_random.Next(0, nonFixedPositions.Count));
             while (cell1 == cell2);
 
             cluster.SwapCells(cell1, cell2);

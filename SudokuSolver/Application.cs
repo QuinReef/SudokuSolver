@@ -3,8 +3,7 @@
 public class Application {
     public static void Main(string[] args) {
 
-        while (true)
-        {
+        while (true) {
             // Clear the console.
             Console.Clear();
             // Execute the program logic.
@@ -13,12 +12,10 @@ public class Application {
             Console.WriteLine("Press any key to continue...");
             Console.ReadKey();
         }
-       
     }
 
-    private static void Execute()
-    {
-        // Retrieve the sudoku to solve from the user
+    private static void Execute() {
+        // Retrieve the sudoku to solve from the user.
         int? grid = SelectGrid();
         /* Determine whether to show the calculations during execution,
            or to solely solve the sudoku, only printing the final result. */
@@ -36,19 +33,22 @@ public class Application {
 
         // Solve the sudoku using ILS.
         SudokuSolver solver = new(sudoku, 5, showSteps);
-        solver.Start();
+        solver.HillClimbing();
 
+        /* Uncomment the two lines below, and comment the two lines above,
+           to start running the experiment class. */
 
         //Experiment experiment = new();
         //experiment.TestSudokuWalkSize(sudoku);
     }
 
     private static int? SelectGrid() {
-        Console.Write("Please select a Sudoku grid between 1 and 5: ");
+        const int limit = 5;
+        Console.Write($"Please select a Sudoku grid between 1 and {limit}: ");
         string input = Console.ReadLine()!;
 
         // Enter recursion if the input was not a valid sudoku index.
-        if (!int.TryParse(input, out int grid) || grid is < 1 or > 5) {
+        if (!int.TryParse(input, out int grid) || grid is < 1 or > limit) {
             Console.WriteLine("Invalid grid input.", Console.ForegroundColor = ConsoleColor.Red);
             Console.ResetColor();
             return SelectGrid();
