@@ -61,8 +61,8 @@ public class SudokuSolver {
             ushort column = Evaluate(sudoku.GetColumnValues(i));
             ushort row = Evaluate(sudoku.GetRowValues(i));
 
-            sudoku.HeuristicScores[i] = column;
-            sudoku.HeuristicScores[9 + i] = row;
+            sudoku.GetHeuristicValues()[i] = column;
+            sudoku.GetHeuristicValues()[9 + i] = row;
 
             score += (ushort)(column + row);
         }
@@ -76,19 +76,19 @@ public class SudokuSolver {
     /// <returns>Updated sudoku game heuristic score</returns>
     public ushort UpdateHeuristicScore(Sudoku sudoku, (ushort column, ushort row) coord1, (ushort column, ushort row) coord2) {
         // First value
-        sudoku.HeuristicScores[coord1.column] = Evaluate(sudoku.GetColumnValues(coord1.column));
-        sudoku.HeuristicScores[coord1.row + 9] = Evaluate(sudoku.GetRowValues(coord1.row));
+        sudoku.GetHeuristicValues()[coord1.column] = Evaluate(sudoku.GetColumnValues(coord1.column));
+        sudoku.GetHeuristicValues()[coord1.row + 9] = Evaluate(sudoku.GetRowValues(coord1.row));
         // Second value
-        sudoku.HeuristicScores[coord2.column] = Evaluate(sudoku.GetColumnValues(coord2.column));
-        sudoku.HeuristicScores[coord2.row + 9] = Evaluate(sudoku.GetRowValues(coord2.row));
+        sudoku.GetHeuristicValues()[coord2.column] = Evaluate(sudoku.GetColumnValues(coord2.column));
+        sudoku.GetHeuristicValues()[coord2.row + 9] = Evaluate(sudoku.GetRowValues(coord2.row));
         
         // Calculate the update heuristic score of all rows and columns.
-        return GetHeuristicScore(sudoku.HeuristicScores);
+        return GetHeuristicScore(sudoku.GetHeuristicValues());
     }
 
     public ushort RetrieveHeuristicScore(Sudoku s, (ushort column, ushort row) coord1, (ushort column, ushort row) coord2) {
         ushort[] scores = new ushort[18];
-        Array.Copy(s.HeuristicScores, scores, s.HeuristicScores.Length);
+        Array.Copy(s.GetHeuristicValues(), scores, s.GetHeuristicValues().Length);
 
         // First value
         scores[coord1.column] = Evaluate(s.GetColumnValues(coord1.column));
