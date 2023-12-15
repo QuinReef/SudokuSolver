@@ -3,8 +3,8 @@
 public class Experiment
 {
     private List<ushort> _randomWalkExperimentSizes =
-        new() { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 20, 25, 30, 40,50,100,200 };
-    private List<ushort> _sampleSizes = new() {5};
+        new() {9};
+    private List<ushort> _sampleSizes = new() {25};
     public Experiment()
     {
  
@@ -12,7 +12,7 @@ public class Experiment
 
     public void TestSudokuWalkSize(Sudoku subject)
     {
-        using (StreamWriter writer = new StreamWriter($"../../../testSizeResults.txt"))
+        using (StreamWriter writer = new StreamWriter($"../../../testSizeResults5.txt"))
         {
             foreach (var sampleSize in _sampleSizes) {
                     Console.WriteLine(sampleSize);
