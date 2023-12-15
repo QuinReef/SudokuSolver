@@ -10,6 +10,7 @@ public class SudokuSolver {
 
     private ushort _randomWalks;
     private ushort _localMaxLimit = 40;
+    private const int MaxIterations = 1000000;
 
     // Statistics to print to the console.
     private ushort _bestScore;
@@ -19,11 +20,14 @@ public class SudokuSolver {
     // Timer to measure total time complexity.
     private Stopwatch _timer = new();
 
-    private readonly Random _random = new();
+    private bool _showSteps = true;
+    //Fixed seed for random generator for reproducability 
+    private const int Seed = 53;
+    private readonly Random _random = new Random(Seed);
 
-    public SudokuSolver(Sudoku s, ushort walks) {
+    public SudokuSolver(Sudoku s, ushort walks, bool showSteps) {
         _activeSudoku = s;
-
+        _showSteps = showSteps;
         _randomWalks = walks;
         _bestScore = InitHeuristicScore(s);
 
@@ -155,31 +159,67 @@ public class SudokuSolver {
     /// <summary>
     /// Prints the statistics for the hillclimb algorithm during runtime
     /// </summary>-
-    public void PrintHillClimbStats(ushort eval, ushort localMax) {
-        Console.Clear();
-        Console.WriteLine("┌───────────────────────────────┐");
-        Console.WriteLine($"│ Timer: {_timer.Elapsed}\t│");
-        Console.WriteLine($"│ Eval: {eval}, From: {localMax}\t\t│");
-        Console.WriteLine($"│               Best: {_bestScore}\t\t│");
-        Console.WriteLine($"│ Iterations: {_iterations}\t\t│");
-        Console.WriteLine($"│ Random walks: {_walksEntered}\t\t│");
-        Console.WriteLine($"│ Total walk steps: {_walksEntered * _randomWalks}\t│");
-        Console.WriteLine("└───────────────────────────────┘");
+    public void PrintHillClimbStats(ushort eval, ushort localMax, int interval) {
 
-        _activeSudoku.Show();
+        //Temporary stop the timer to capture the true processing time
+        _timer.Stop();
+        if (_timer.ElapsedMilliseconds % interval == 0)
+        {
+            Console.Clear();
+            Console.WriteLine("┌───────────────────────────────┐");
+            Console.WriteLine($"│ Timer: {_timer.Elapsed}\t│");
+            Console.WriteLine($"│ Eval: {eval}, From: {localMax}\t\t│");
+            Console.WriteLine($"│               Best: {_bestScore}\t\t│");
+            Console.WriteLine($"│ Iterations: {_iterations}\t\t│");
+            Console.WriteLine($"│ Random walks: {_walksEntered}\t\t│");
+            Console.WriteLine($"│ Total walk steps: {_walksEntered * _randomWalks}\t│");
+            Console.WriteLine("└───────────────────────────────┘");
+            _activeSudoku.Show();
+        }
+        _timer.Start();
+
+        
+    }
+
+    /// <summary>
+    /// Print the elapsed time to the console
+    /// </summary>
+    /// <param name="interval"></param>
+    public void ShowElapsedTime(int interval)
+    {
+        if (_timer.ElapsedMilliseconds % interval == 0)
+        {
+            _timer.Stop();
+
+            Console.SetCursorPosition(0, 0);
+            Console.WriteLine($"Current Time: {_timer.Elapsed}");
+            _timer.Start();
+
+        }
+    }
+    /// <summary>
+    /// Prints the final result to the console
+    /// </summary>
+    /// <param name="finalSolution"></param>
+    public void ShowFinalResult(Sudoku finalSolution)
+    {
+
+        Console.WriteLine($"Total Time: {_timer.Elapsed}                             ");
+        Console.WriteLine($"Best found Score: {_bestScore}                           ");
+        finalSolution.Show();
     }
 
     /// <summary>
     /// Solves the sudoku using the Random Restart Hill Climbing algorithm
     /// </summary>
-    public void HillClimbing() {
+    public long HillClimbing() {
         int consecutiveIterationsWithoutImprovement = 0;
 
         ushort tempBestScore = _bestScore;
         ushort localMax = _bestScore;
         Sudoku currentBestSolution = (Sudoku)_activeSudoku.Clone();
 
-        while (_bestScore > 0) {
+        while (_bestScore > 0 && _iterations < MaxIterations) {
             // Generate the successors ordered by score
             (Sudoku, ushort) successor = GetSuccessorsOrderedByScore();
 
@@ -221,26 +261,25 @@ public class SudokuSolver {
                 }
             }
 
-            if (_timer.ElapsedMilliseconds % 10 == 0) // every 0.5 second
+            if (_showSteps) // every 0.5 second
             {
-                /* Temporarily stop the timer while printing the current state,
-                   because we do not wish to count that towards the time complexity. */
-                _timer.Stop();
-                PrintHillClimbStats(tempBestScore, localMax);
-                _timer.Start();
+                PrintHillClimbStats(tempBestScore, localMax, 500);
             }
+            else
+            {
+                ShowElapsedTime(10);
+            }
+          
+            
 
             _iterations++;
         }
 
-        Console.WriteLine($"Best found Score: {_bestScore}                             ");
-        currentBestSolution.Show();
-        Console.WriteLine(GetHeuristicScore(currentBestSolution.HeuristicScores));
-
-        foreach (ushort val in currentBestSolution.HeuristicScores) {
-            Console.Write(val + " ");
-        }
+        ShowFinalResult(currentBestSolution);
+        return _timer.ElapsedMilliseconds;
     }
+
+   
 
     public void RandomWalk() {
         Sudoku clone = (Sudoku)_activeSudoku.Clone();
