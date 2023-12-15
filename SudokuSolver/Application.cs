@@ -14,18 +14,16 @@ public class Application {
         // Load the selected sudoku, and execute the program logic.
         Sudoku sudoku = new(input);
         sudoku.Load();
-        //sudoku.Show();
-
-        //Sudoku s = (Sudoku)sudoku.Clone();
-
-        //sudoku.GetSudokuGrid()[0].SwapCells((0, 0), (2, 2));
-        //sudoku.Show();
-        //s.Show();
+        // sudoku.Show();
 
         SudokuSolver solver = new(sudoku, 2);
+
+        // Console.WriteLine(solver.InitHeuristicScore(sudoku));
+        // Console.WriteLine(solver.UpdateHeuristicScore((0, 0), (1, 0)));
+        // Console.WriteLine(solver.RetrieveHeuristicScore(sudoku, (0, 0), (1, 0)));
+        // Console.WriteLine(solver.GetHeuristicScore(solver._heuristicScores));
+
         solver.HillClimbing();
-        
-        // Console.ReadLine();
     }
 
     private static int? SelectGrid() {

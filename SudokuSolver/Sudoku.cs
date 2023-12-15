@@ -13,6 +13,9 @@ public class Sudoku : ICloneable {
     // The raw user input representing the starting state of the sudoku grid.
     private string _grid;
 
+    // The heuristicvalues of each row and column.
+    public ushort[] HeuristicScores = new ushort[18];
+
     public Sudoku(string input) {
         _grid = input;
     }
@@ -142,8 +145,12 @@ public class Sudoku : ICloneable {
             newclusters[i] = (SudokuCluster)_clusters[i].Clone();
         }
 
+        ushort[] scores = new ushort[18];
+        Array.Copy(HeuristicScores, scores, HeuristicScores.Length);
+
         return new Sudoku(_grid) {
-            _clusters = newclusters
+            _clusters = newclusters,
+            HeuristicScores = scores
         };
     }
 }

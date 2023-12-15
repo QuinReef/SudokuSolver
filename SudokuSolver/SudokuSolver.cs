@@ -6,7 +6,7 @@ public class SudokuSolver {
     // The current state of the sudoku grid.
     private Sudoku _activeSudoku;
     // The heuristicvalues of each row and column.
-    private ushort[] _heuristicScores = new ushort[18];
+    // public ushort[] _heuristicScores = new ushort[18];
 
     private ushort _randomWalks;
     private ushort _localMaxLimit = 40;
@@ -57,9 +57,8 @@ public class SudokuSolver {
             ushort column = Evaluate(sudoku.GetColumnValues(i));
             ushort row = Evaluate(sudoku.GetRowValues(i));
 
-            
-            _heuristicScores[i] = column;
-            _heuristicScores[9 + i] = row;
+            sudoku.HeuristicScores[i] = column;
+            sudoku.HeuristicScores[9 + i] = row;
 
             score += (ushort)(column + row);
         }
@@ -71,21 +70,21 @@ public class SudokuSolver {
     /// Given a row and column update the scores list
     /// </summary>
     /// <returns>Updated sudoku game heuristic score</returns>
-    public ushort UpdateHeuristicScore((ushort column, ushort row) coord1, (ushort column, ushort row) coord2) {
+    public ushort UpdateHeuristicScore(Sudoku sudoku, (ushort column, ushort row) coord1, (ushort column, ushort row) coord2) {
         // First value
-        _heuristicScores[coord1.column] = Evaluate(_activeSudoku.GetColumnValues(coord1.column));
-        _heuristicScores[coord1.row + 9] = Evaluate(_activeSudoku.GetRowValues(coord1.row));
+        sudoku.HeuristicScores[coord1.column] = Evaluate(sudoku.GetColumnValues(coord1.column));
+        sudoku.HeuristicScores[coord1.row + 9] = Evaluate(sudoku.GetRowValues(coord1.row));
         // Second value
-        _heuristicScores[coord2.column] = Evaluate(_activeSudoku.GetColumnValues(coord2.column));
-        _heuristicScores[coord2.row + 9] = Evaluate(_activeSudoku.GetRowValues(coord2.row));
+        sudoku.HeuristicScores[coord2.column] = Evaluate(sudoku.GetColumnValues(coord2.column));
+        sudoku.HeuristicScores[coord2.row + 9] = Evaluate(sudoku.GetRowValues(coord2.row));
         
         // Calculate the update heuristic score of all rows and columns.
-        return GetHeuristicScore(_heuristicScores);
+        return GetHeuristicScore(sudoku.HeuristicScores);
     }
 
     public ushort RetrieveHeuristicScore(Sudoku s, (ushort column, ushort row) coord1, (ushort column, ushort row) coord2) {
         ushort[] scores = new ushort[18];
-        Array.Copy(_heuristicScores, scores, _heuristicScores.Length);
+        Array.Copy(s.HeuristicScores, scores, s.HeuristicScores.Length);
 
         // First value
         scores[coord1.column] = Evaluate(s.GetColumnValues(coord1.column));
@@ -116,12 +115,12 @@ public class SudokuSolver {
     /// </summary>
     /// <returns></returns>
     public (Sudoku, ushort) GetSuccessorsOrderedByScore() {
-        (Sudoku sudoku, ushort currentBestFitness) bestSuccessor = new(null!, ushort.MaxValue);
+        (Sudoku sudoku, ushort currentBestFitness) bestSuccessor = new(_activeSudoku, ushort.MaxValue);
 
         // Randomly select a cluster
         ushort clusterIndex = (ushort)new Random().Next(0, 9);
 
-        (ushort, ushort) ce1 = new (), ce2 = new ();
+        (ushort, ushort) ce1 = new(), ce2 = new();
 
         HashSet<(ushort, ushort)> nonFixedPositions = _activeSudoku.GetSudokuGrid()[clusterIndex].RetrieveInvalidCells();
 
@@ -140,7 +139,7 @@ public class SudokuSolver {
                 (ushort, ushort) c1 = ((ushort)(cell1.Item1 + clusterIndex % 3 * 3), (ushort)(cell1.Item2 + (clusterIndex / 3) * 3));
                 (ushort, ushort) c2 = ((ushort)(cell2.Item1 + clusterIndex % 3 * 3), (ushort)(cell2.Item2 + (clusterIndex / 3) * 3));
 
-                ushort tempScore = RetrieveHeuristicScore(clone, c1, c2);
+                ushort tempScore = RetrieveHeuristicScore(clone, c1, c2); // shouldn't change values
 
                 if (tempScore < bestSuccessor.currentBestFitness) {
                     ce1 = c1; ce2 = c2;
@@ -149,7 +148,7 @@ public class SudokuSolver {
             }
         }
 
-        UpdateHeuristicScore(ce1, ce2);
+        UpdateHeuristicScore(bestSuccessor.sudoku, ce1, ce2);
         return bestSuccessor;
     }
 
@@ -184,6 +183,7 @@ public class SudokuSolver {
             // Generate the successors ordered by score
             (Sudoku, ushort) successor = GetSuccessorsOrderedByScore();
 
+            // If the found successor is an improvement of the active sudoku..
             if (successor.Item2 < tempBestScore) {
                 // Update the current sudoku with the best successor
                 _activeSudoku = (Sudoku)successor.Item1.Clone();
@@ -221,14 +221,12 @@ public class SudokuSolver {
                 }
             }
 
-            if (_timer.ElapsedMilliseconds % 500 == 0) // every 0.5 second
+            if (_timer.ElapsedMilliseconds % 10 == 0) // every 0.5 second
             {
                 /* Temporarily stop the timer while printing the current state,
                    because we do not wish to count that towards the time complexity. */
                 _timer.Stop();
                 PrintHillClimbStats(tempBestScore, localMax);
-                Console.WriteLine();
-                currentBestSolution.Show();
                 _timer.Start();
             }
 
@@ -237,9 +235,9 @@ public class SudokuSolver {
 
         Console.WriteLine($"Best found Score: {_bestScore}                             ");
         currentBestSolution.Show();
-        Console.WriteLine(GetHeuristicScore(_heuristicScores));
+        Console.WriteLine(GetHeuristicScore(currentBestSolution.HeuristicScores));
 
-        foreach (ushort val in _heuristicScores) {
+        foreach (ushort val in currentBestSolution.HeuristicScores) {
             Console.Write(val + " ");
         }
     }
@@ -254,6 +252,7 @@ public class SudokuSolver {
             SudokuCluster cluster = clone.GetSudokuGrid()[clusterIndex];
             HashSet<(ushort, ushort)> nonFixedPositions = cluster.RetrieveInvalidCells();
 
+            // todo: 
             (ushort, ushort) cell1 = nonFixedPositions.ElementAt(_random.Next(0, nonFixedPositions.Count));
             (ushort, ushort) cell2;
             do cell2 = nonFixedPositions.ElementAt(_random.Next(0, nonFixedPositions.Count));
