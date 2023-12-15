@@ -10,6 +10,7 @@ public class SudokuSolver {
     private bool _showSteps;
     private ushort _randomWalks;
     private ushort _localMaxLimit = 40;
+    private int _maxIterations = 1000000;
 
     // Statistics to print to the console.
     private ushort _bestScore;
@@ -105,7 +106,7 @@ public class SudokuSolver {
         ushort localMax = _bestScore;
         Sudoku currentBestSolution = _activeSudoku;
 
-        while (_bestScore > 0) {
+        while (_bestScore > 0 && _iterations < _maxIterations) {
             (Sudoku, ushort) successor = DetermineBestSuccessor();
 
             // If the found successor is an improvement of the active sudoku..
