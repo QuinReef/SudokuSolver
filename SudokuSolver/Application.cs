@@ -4,7 +4,9 @@ public class Application {
     public static void Main(string[] args) {
         // Retrieve the sudoku to solve from the user.
         int? grid = SelectGrid();
-        bool showSteps = GetProgramDefaults();
+        /* Determine whether to show the calculations during execution,
+           or to solely solve the sudoku, only printing the final result. */
+        bool showSteps = DetermineOutput();
         
         // Read the selected sudoku puzzle from the input file.
         string input = ReadInputFile(grid);
@@ -15,27 +17,14 @@ public class Application {
         // Load the selected sudoku, and execute the program logic.
         Sudoku sudoku = new(input);
         sudoku.Load();
-        //SudokuSolver solver = new(sudoku, 2, showSteps);
 
-        //solver.HillClimbing();
-        Experiment experiment = new();
-        experiment.TestSudokuWalkSize(sudoku);
-    }
+        // Solve the sudoku using ILS.
+        SudokuSolver solver = new(sudoku, 2, showSteps);
+        solver.HillClimbing();
 
-    private static bool GetProgramDefaults()
-    {
-        Console.Write("Show intermediate steps? Y : N ");
-        char input = char.ToUpper(Console.ReadKey().KeyChar);
 
-        // Enter recursion if the input was not a valid sudoku index.
-        if (input != 'Y' && input != 'N')
-        {
-            Console.WriteLine("Invalid option input.", Console.ForegroundColor = ConsoleColor.Red);
-            Console.ResetColor();
-            return GetProgramDefaults();
-        }
-
-        return input == 'Y';
+        // Experiment experiment = new();
+        // experiment.TestSudokuWalkSize(sudoku);
     }
 
     private static int? SelectGrid() {
@@ -50,6 +39,20 @@ public class Application {
         }
 
         return grid;
+    }
+
+    private static bool DetermineOutput() {
+        Console.Write("Show intermediate steps (Y/N): ");
+        char input = char.ToUpper(Console.ReadKey().KeyChar);
+
+        // Enter recursion if the input was invalid.
+        if (input != 'Y' && input != 'N') {
+            Console.WriteLine("Invalid option input.", Console.ForegroundColor = ConsoleColor.Red);
+            Console.ResetColor();
+            return DetermineOutput();
+        }
+
+        return input == 'Y';
     }
 
     private static string ReadInputFile(int? grid) {
