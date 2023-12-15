@@ -20,7 +20,7 @@ public class Application {
 
         // Solve the sudoku using ILS.
         SudokuSolver solver = new(sudoku, 2, showSteps);
-        solver.HillClimbing();
+        solver.Start();
 
 
         // Experiment experiment = new();

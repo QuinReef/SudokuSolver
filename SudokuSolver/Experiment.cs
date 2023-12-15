@@ -21,7 +21,7 @@ public class Experiment
                     writer.Write($"{testSize}:");
                     for (int i = 0; i < sampleSize; i++) {
                         SudokuSolver solver = new((Sudoku)subject.Clone(), testSize, false);
-                        long timeMili = solver.HillClimbing();
+                        long timeMili = solver.Start();
                         writer.Write($"{timeMili},");
                     }
 
