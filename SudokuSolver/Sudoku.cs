@@ -33,7 +33,7 @@ public class Sudoku : ICloneable {
     /// <summary>
     /// Loads each value from the initial input string into the appropriate <see cref="SudokuCluster"/>.
     /// </summary>
-    public void Load() {
+    public void Load(bool randomFill) {
         // Convert the input into a list of ushorts, skipping the initial white space.
         ushort[] values = _grid.Split(' ').Skip(1).Select(ushort.Parse).ToArray();
 
@@ -61,13 +61,23 @@ public class Sudoku : ICloneable {
                 }
             }
 
-            /* Add the finalised cluster to the sudoko grid.
-               Firstly, however, all "empty" (0) values in the read cluster are replaced by appropriate, missing values. */
-            _clusters[i * 3] = cluster1.FillMissingValues();
-            _clusters[i * 3 + 1] = cluster2.FillMissingValues();
-            _clusters[i * 3 + 2] = cluster3.FillMissingValues();
+            if (randomFill)
+            {
+                /* Add the finalised cluster to the sudoko grid.
+                   Firstly, however, all "empty" (0) values in the read cluster are replaced by appropriate, missing values. */
+                _clusters[i * 3] = cluster1.FillMissingValues();
+                _clusters[i * 3 + 1] = cluster2.FillMissingValues();
+                _clusters[i * 3 + 2] = cluster3.FillMissingValues();
+            }
+            else
+            {
+                _clusters[i * 3] = cluster1;
+                _clusters[i * 3 + 1] = cluster2;
+                _clusters[i * 3 + 2] = cluster3;
+            }
         }
     }
+
 
     // Helper function to fill the respective cluster's values, reducing boilerplate code.
     private void FillCluster(SudokuCluster cluster, ushort value, ushort row, ushort column) {

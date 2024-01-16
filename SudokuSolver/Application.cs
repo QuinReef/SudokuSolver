@@ -33,17 +33,34 @@ public class Application {
 
         // Load the selected sudoku, and execute the program logic.
         Sudoku sudoku = new(input);
-        sudoku.Load();
 
-        // Solve the sudoku using ILS.
-        SudokuSolver solver = new(sudoku, 5, showSteps);
-        solver.HillClimbing();
-
+ 
         /* Uncomment the two lines below, and comment the two lines above,
            to start running the experiment class. */
 
         //Experiment experiment = new();
         //experiment.TestSudokuWalkSize(sudoku);
+        Console.Write("Choose solving algorithm (1: Hill Climbing, 2: Backtracking): ");
+        int algorithmChoice = int.Parse(Console.ReadLine()!);
+
+        switch (algorithmChoice)
+        {
+            case 1:
+                // Solve the sudoku using ILS.
+                sudoku.Load(true);
+                SudokuSolverHC solver = new(sudoku, 5, showSteps);
+                solver.HillClimbing();
+
+                break;
+            case 2:
+                sudoku.Load(false);
+                SudokuSolverCBT solverCBT = new SudokuSolverCBT(sudoku);
+                solverCBT.Solve();
+                break;
+            default:
+                Console.WriteLine("Invalid choice.");
+                break;
+        }
     }
 
     private static int? SelectGrid() {

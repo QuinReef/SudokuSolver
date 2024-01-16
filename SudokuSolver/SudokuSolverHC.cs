@@ -2,7 +2,7 @@
 
 namespace SudokuSolver;
 
-public class SudokuSolver {
+public class SudokuSolverHC {
     // The current state of the sudoku grid.
     private Sudoku _activeSudoku;
 
@@ -24,7 +24,7 @@ public class SudokuSolver {
     private const int seed = 53;
     private readonly Random _random = new(seed);
 
-    public SudokuSolver(Sudoku sudoku, ushort walks, bool showSteps)
+    public SudokuSolverHC(Sudoku sudoku, ushort walks, bool showSteps)
     {
         _activeSudoku = sudoku;
         _showSteps = showSteps;

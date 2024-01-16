@@ -24,7 +24,7 @@ public class Experiment
                 foreach (var testSize in _randomWalkExperimentSizes) {
                     writer.Write($"{testSize}:");
                     for (int i = 0; i < sampleSize; i++) {
-                        SudokuSolver solver = new((Sudoku)subject.Clone(), testSize, false);
+                        SudokuSolverHC solver = new((Sudoku)subject.Clone(), testSize, false);
                         long timeMili = solver.HillClimbing();
                         writer.Write($"{timeMili},");
                     }
