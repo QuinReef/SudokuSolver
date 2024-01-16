@@ -1,6 +1,8 @@
 ﻿namespace SudokuSolver;
 
 public class Application {
+    private static List<string>? _sudokuInput;
+
     public static void Main(string[] args) {
         while (true) {
             // Clear the console.
@@ -14,6 +16,9 @@ public class Application {
     }
 
     private static void Execute() {
+        // Start by loading the input file.
+        ReadInputFile("../../../sudoku_input.txt");
+
         // Retrieve the sudoku to solve from the user.
         int? grid = SelectGrid();
         /* Determine whether to show the calculations during execution,
@@ -21,7 +26,7 @@ public class Application {
         bool showSteps = DetermineOutput();
 
         // Read the selected sudoku puzzle from the input file.
-        string input = ReadInputFile(grid);
+        string input = SelectSudoku(grid);
 
         // Clear user input.
         Console.Clear();
@@ -42,12 +47,12 @@ public class Application {
     }
 
     private static int? SelectGrid() {
-        const int limit = 5;
+        int limit = _sudokuInput!.Count / 2; // the sudoku should always be on the second line
         Console.Write($"Please select a Sudoku grid between 1 and {limit}: ");
         string input = Console.ReadLine()!;
 
         // Enter recursion if the input was not a valid sudoku index.
-        if (!int.TryParse(input, out int grid) || grid is < 1 or > limit) {
+        if (!int.TryParse(input, out int grid) || grid < 1 || grid > limit) {
             Console.WriteLine("Invalid grid input.", Console.ForegroundColor = ConsoleColor.Red);
             Console.ResetColor();
             return SelectGrid();
@@ -71,10 +76,33 @@ public class Application {
         return input == 'Y';
     }
 
-    private static string ReadInputFile(int? grid) {
-        string[] lines = File.ReadAllLines("../../../sudoku_input.txt");
+    private static void ReadInputFile(string filePath) {
+        // Read the input from the original file.
+        string[] lines = File.ReadAllLines(filePath);
 
+        // Exclude comments within a code block.
+        List<string> filtered = new();
+        bool insideBlockComment = false;
+
+        foreach (string line in lines) {
+            if (line.StartsWith("/*")) {
+                insideBlockComment = true;
+            }
+
+            if (!insideBlockComment && line != "") {
+                filtered.Add(line);
+            }
+
+            if (line.EndsWith("*/")) {
+                insideBlockComment = false;
+            }
+        }
+
+        _sudokuInput = filtered;
+    }
+    
+    private static string SelectSudoku(int? grid) {
         // The input file will have the appropriate sudoku input on each second line.
-        return lines[(int)grid! * 2 - 1];
+        return _sudokuInput![(int)grid! * 2 - 1];
     }
 }
