@@ -12,6 +12,7 @@ public class Application {
             // Wait for user input to continue.
             Console.WriteLine("Press any key to continue...");
             Console.ReadKey();
+
         }
     }
 
@@ -40,7 +41,7 @@ public class Application {
 
         //Experiment experiment = new();
         //experiment.TestSudokuWalkSize(sudoku);
-        Console.Write("Choose solving algorithm (1: Hill Climbing, 2: Backtracking): ");
+        Console.Write("Choose solving algorithm (1: HC, (2: CBT, (3: FC ");
         int algorithmChoice = int.Parse(Console.ReadLine()!);
 
         switch (algorithmChoice)
@@ -57,6 +58,11 @@ public class Application {
                 sudoku.Load(false);
                 SudokuSolverCBT solverCBT = new SudokuSolverCBT(sudoku);
                 solverCBT.Solve();
+                break;
+            case 3:
+                sudoku.Load(false);
+                SudokuSolverFC solverFC = new SudokuSolverFC(sudoku);
+                solverFC.Solve();
                 break;
             default:
                 Console.WriteLine("Invalid choice.");

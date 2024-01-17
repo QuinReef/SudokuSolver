@@ -108,7 +108,7 @@ public class Sudoku : ICloneable {
 
                 // Each value is printed from left-to-right per row.
                 for (int column = 0; column < 9; column++) {
-                    Console.Write($"{_clusters[i * 3 + column / 3].RetrieveCells()[(ushort)(column % 3), row]} ");
+                    Console.Write($"{_clusters[i * 3 + column / 3].RetrieveCells()[(ushort)(column % 3), row].Value} ");
 
                     if ((column + 1) % 3 == 0) {
                         Console.Write("│ ");
@@ -211,6 +211,60 @@ public class Sudoku : ICloneable {
             _heuristicValues = scores
         };
     }
+
+    public bool MakeNodeConsistent()
+    {
+        for (ushort row = 0; row < 9; row++)
+        {
+            for (ushort column = 0; column < 9; column++)
+            {
+                Cell cell = _clusters[row / 3 * 3 + column / 3].RetrieveCells()[column % 3, row % 3];
+
+                // Check if the cell has a fixed value.
+                if (cell.IsFixed)
+                {
+                    // Remove the fixed value from the domains of cells in the same row, column, and cluster.
+                    UpdateDomains(row, column, cell.Value);
+                }
+            }
+        }
+
+        return true;
+    }
+
+    private void UpdateDomains(ushort row, ushort column, ushort fixedValue)
+    {
+        // Update domains in the same row.
+        for (ushort c = 0; c < 9; c++)
+        {
+            if (c != column)
+            {
+                _clusters[row / 3 * 3 + c / 3].RetrieveCells()[c % 3, row % 3].Domain?.Remove(fixedValue);
+            }
+        }
+
+        // Update domains in the same column.
+        for (ushort r = 0; r < 9; r++)
+        {
+            if (r != row)
+            {
+                _clusters[r / 3 * 3 + column / 3].RetrieveCells()[column % 3, r % 3].Domain?.Remove(fixedValue);
+            }
+        }
+
+        // Update domains in the same cluster.
+        for (ushort r = (ushort)(3 * (row / 3)); r < 3 * (row / 3 + 1); r++)
+        {
+            for (ushort c = (ushort)(3 * (column / 3)); c < 3 * (column / 3 + 1); c++)
+            {
+                if (r != row || c != column)
+                {
+                    _clusters[r / 3 * 3 + c / 3].RetrieveCells()[c % 3, r % 3].Domain?.Remove(fixedValue);
+                }
+            }
+        }
+    }
+
 }
 
 public struct Cell {
@@ -227,7 +281,7 @@ public struct Cell {
 
     public ushort Value;
     public bool IsFixed;
-    public HashSet<ushort> Domain;
+    public HashSet<ushort>? Domain;
 }
 
 /// <summary>
@@ -258,7 +312,11 @@ public class SudokuCluster : ICloneable {
     /// <param name="coord">The coordinates in the 2d cells array at which to insert the value.</param>
     /// <param name="value">The value that should be inserted in the cell.</param>
     public void AddCell((ushort, ushort) coord, ushort value) {
-        _cells[coord.Item1, coord.Item2] = new Cell(value,true, new HashSet<ushort>());
+        _cells[coord.Item1, coord.Item2] = new Cell(value,value != 0?true : false);
+    }
+    public void AddCell((ushort, ushort) coord, Cell cell)
+    {
+        _cells[coord.Item1, coord.Item2] = new Cell(cell.Value, cell.IsFixed, cell.Domain);
     }
 
     /// <summary>
@@ -305,6 +363,28 @@ public class SudokuCluster : ICloneable {
         // For each empty position in a cluster, randomly generate a valid value.
         foreach ((ushort x, ushort y) in _invalidCells) {
             _cells[x, y] = new Cell(0, false, _availableValues.ToHashSet());
+        }
+
+        return this;
+    }
+
+    public SudokuCluster UpdateDomains(ushort tempFixedValue)
+    {
+        // For each empty position in a cluster, randomly generate a valid value.
+        foreach ((ushort x, ushort y) in _invalidCells)
+        {
+            _cells[x, y].Domain.Remove(tempFixedValue);
+        }
+
+        return this;
+    }
+
+    public SudokuCluster RestoreDomains(ushort tempFixedValue)
+    {
+        // For each empty position in a cluster, randomly generate a valid value.
+        foreach ((ushort x, ushort y) in _invalidCells)
+        {
+            _cells[x, y].Domain.Add(tempFixedValue);
         }
 
         return this;
