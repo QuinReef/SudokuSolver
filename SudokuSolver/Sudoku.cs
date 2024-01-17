@@ -133,7 +133,7 @@ public class Sudoku : ICloneable {
         ushort[] values = new ushort[9];
 
         for (int y = 0; y < 9; y++) {
-            values[y] = _clusters[row / 3 * 3 + y / 3].RetrieveCells()[(ushort)(y % 3), row % 3];
+            values[y] = _clusters[row / 3 * 3 + y / 3].RetrieveCells()[(ushort)(y % 3), row % 3].Value;
         }
 
         return values;
@@ -147,7 +147,7 @@ public class Sudoku : ICloneable {
         ushort[] values = new ushort[9];
 
         for (int x = 0; x < 9; x++) {
-            values[x] = _clusters[x / 3 * 3 + column / 3].RetrieveCells()[(ushort)(column % 3), x % 3];
+            values[x] = _clusters[x / 3 * 3 + column / 3].RetrieveCells()[(ushort)(column % 3), x % 3].Value;
         }
 
         return values;
@@ -170,15 +170,13 @@ public class Sudoku : ICloneable {
     }
 }
 
-public struct Cell
-{
-    public Cell(ushort value, bool isFixed)
-    {
+public struct Cell {
+    public Cell(ushort value, bool isFixed) {
         Value = value;
         IsFixed = isFixed;
     }
 
-    public double Value;
+    public ushort Value;
     public bool IsFixed;
 }
 
@@ -211,7 +209,7 @@ public class SudokuCluster : ICloneable {
     /// <param name="coord">The coordinates in the 2d cells array at which to insert the value.</param>
     /// <param name="value">The value that should be inserted in the cell.</param>
     public void AddCell((ushort, ushort) coord, ushort value) {
-        _cells[coord.Item1, coord.Item2] = value;
+        _cells[coord.Item1, coord.Item2].Value = value;
         _cellDomains[coord.Item1, coord.Item2] = new HashSet<ushort>();
 
     }
@@ -250,7 +248,7 @@ public class SudokuCluster : ICloneable {
         foreach ((ushort x, ushort y) in _invalidCells) {
             int index = random.Next(_availableValues.Count);
             ushort num = _availableValues.ElementAt(index);
-            _cells[x, y] = num;
+            _cells[x, y].Value = num;
             _availableValues.Remove(num);
         }
 
@@ -260,7 +258,7 @@ public class SudokuCluster : ICloneable {
     // The implementation of Clone() from the ICloneable interface to enable deep-copying.
     public object Clone() {
         SudokuCluster clonedCluster = new() {
-            _cells = new ushort[3, 3],
+            _cells = new Cell[3, 3],
             _invalidCells = new HashSet<(ushort, ushort)>(_invalidCells),
             _availableValues = _availableValues
         };

@@ -65,7 +65,7 @@ namespace SudokuSolver
             {
                 for (ushort column = 0; column < 9; column++)
                 {
-                    if (sudoku.GetSudokuGrid()[row / 3 * 3 + column / 3].RetrieveCells()[column % 3, row % 3] == 0)
+                    if (sudoku.GetSudokuGrid()[row / 3 * 3 + column / 3].RetrieveCells()[column % 3, row % 3].Value == 0)
                     {
                         return (row, column);
                     }
@@ -100,14 +100,14 @@ namespace SudokuSolver
         private static bool IsValueInCluster(Sudoku sudoku, ushort row, ushort column, ushort value)
         {
             SudokuCluster cluster = sudoku.GetSudokuGrid()[row / 3 * 3 + column / 3];
-            ushort[,] clusterCells = cluster.RetrieveCells();
+            Cell[,] clusterCells = cluster.RetrieveCells();
             
             // Check if the value is present in the 3x3 cluster.
             for (ushort i = 0; i < 3; i++)
             {
                 for (ushort j = 0; j < 3; j++)
                 {
-                    if (clusterCells[i, j] == value)
+                    if (clusterCells[i, j].Value == value)
                     {
                         return true;
                     }
