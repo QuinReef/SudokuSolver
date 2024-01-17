@@ -41,7 +41,7 @@ public class Application {
 
         //Experiment experiment = new();
         //experiment.TestSudokuWalkSize(sudoku);
-        Console.Write("Choose solving algorithm (1: HC, (2: CBT, (3: FC ");
+        Console.Write("Choose solving algorithm (1: HC, (2: CBT, (3: FC, (4: FC-MCV");
         int algorithmChoice = int.Parse(Console.ReadLine()!);
 
         switch (algorithmChoice)
@@ -64,6 +64,7 @@ public class Application {
                 SudokuSolverFC solverFC = new SudokuSolverFC(sudoku);
                 solverFC.Solve();
                 break;
+     
             default:
                 Console.WriteLine("Invalid choice.");
                 break;
