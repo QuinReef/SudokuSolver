@@ -43,7 +43,7 @@ namespace SudokuSolver
                 {
                     // Assign the value to the cell.
                     _activeSudoku.GetSudokuGrid()[row / 3 * 3 + column / 3].AddCell(((ushort)(column % 3), (ushort)(row % 3)), value);
-                    // _activeSudoku.Show();
+                    _activeSudoku.Show();
                     // Recursively try to solve the rest of the puzzle.
                     if (SolveHelper())
                     {
