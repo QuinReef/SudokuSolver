@@ -20,6 +20,7 @@ public class Sudoku : ICloneable {
         _grid = input;
     }
 
+
     /// <summary>
     /// Retrieves the full sudoku grid, represented by nine <see cref="SudokuCluster"/> instances.
     /// </summary>
@@ -169,12 +170,25 @@ public class Sudoku : ICloneable {
     }
 }
 
+public struct Cell
+{
+    public Cell(ushort value, bool isFixed)
+    {
+        Value = value;
+        IsFixed = isFixed;
+    }
+
+    public double Value;
+    public bool IsFixed;
+}
+
 /// <summary>
 /// Represents a 3x3 grid on a <see cref="Sudoku"/> board.
 /// </summary>
 public class SudokuCluster : ICloneable {
     // All values present within each cell in the cluster.
-    private ushort[,] _cells = new ushort[3, 3];
+    private Cell[,] _cells = new Cell[3, 3];
+    private HashSet<ushort>[,] _cellDomains = new HashSet<ushort>[3, 3];
     // All cells with incorrect values that still need to be changed.
     private HashSet<(ushort, ushort)> _invalidCells = new();
     /* All values 1-9 that are not yet present in the cluster.
@@ -184,7 +198,7 @@ public class SudokuCluster : ICloneable {
     /// <summary>
     /// Retrieves all values present within each cell in the cluster.
     /// </summary>
-    public ushort[,] RetrieveCells() => _cells;
+    public Cell[,] RetrieveCells() => _cells;
 
     /// <summary>
     /// Retrieves the coordinates of all values with incorrect values that still need to be changed.
@@ -198,6 +212,8 @@ public class SudokuCluster : ICloneable {
     /// <param name="value">The value that should be inserted in the cell.</param>
     public void AddCell((ushort, ushort) coord, ushort value) {
         _cells[coord.Item1, coord.Item2] = value;
+        _cellDomains[coord.Item1, coord.Item2] = new HashSet<ushort>();
+
     }
 
     /// <summary>
@@ -205,6 +221,7 @@ public class SudokuCluster : ICloneable {
     /// </summary>
     public void AddInvalidCell((ushort, ushort) coord) {
         _invalidCells.Add(coord);
+        _cellDomains[coord.Item1, coord.Item2] = Enumerable.Range(1, 9).Select(x => (ushort)x).ToHashSet();
     }
 
     /// <summary>

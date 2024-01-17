@@ -22,6 +22,7 @@ namespace SudokuSolver
             // If there are no empty cells, the puzzle is solved.
             if (emptyCell == null)
             {
+                _activeSudoku.Show();
                 return true;
             }
 
@@ -34,7 +35,6 @@ namespace SudokuSolver
                 {
                     // Assign the value to the cell.
                     _activeSudoku.GetSudokuGrid()[row / 3 * 3 + column / 3].AddCell(((ushort)(column % 3), (ushort)(row % 3)), value);
-                    _activeSudoku.Show();
                     // Recursively try to solve the rest of the puzzle.
                     if (SolveHelper())
                     {

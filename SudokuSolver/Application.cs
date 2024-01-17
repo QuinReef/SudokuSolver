@@ -53,6 +53,7 @@ public class Application {
 
                 break;
             case 2:
+                
                 sudoku.Load(false);
                 SudokuSolverCBT solverCBT = new SudokuSolverCBT(sudoku);
                 solverCBT.Solve();
