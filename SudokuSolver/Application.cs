@@ -97,7 +97,7 @@ public class Application {
         // Read the input from the original file.
         string[] lines = File.ReadAllLines(filePath);
 
-        // Exclude comments within a code block.
+        // Exclude comments within a code block, as well as empty lines.
         List<string> filtered = new();
         bool insideBlockComment = false;
 
