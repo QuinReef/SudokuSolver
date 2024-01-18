@@ -37,7 +37,7 @@ public class SudokuSolverHC
     /// <summary>
     /// Evaluates the heuristic value for a row or column.
     /// </summary>
-    private ushort Evaluate(ushort[] values)
+    private ushort Evaluate(HashSet<ushort> values)
     {
         HashSet<ushort> uniques = new();
         ushort counter = 0;

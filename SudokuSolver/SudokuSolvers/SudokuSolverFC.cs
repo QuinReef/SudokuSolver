@@ -16,13 +16,13 @@ namespace SudokuSolver.SudokuSolvers
 
         }
 
-        public bool Solve()
+        public void Solve()
         {
             // Make the initial node consistent by updating domains based on fixed values.
-            _activeSudoku.MakeNodeConsistent();
+            MakeNodeConsistent();
 
             // Start solving using forward checking.
-            return SolveHelper();
+            SolveHelper();
 
         }
 
@@ -69,20 +69,16 @@ namespace SudokuSolver.SudokuSolvers
             return false;
         }
 
-        private Tuple<Cell, (ushort, ushort)>? FindEmptyCell(Sudoku sudoku)
-        {
-            for (ushort row = 0; row < 9; row++)
-            {
-                for (ushort column = 0; column < 9; column++)
-                {
-                    Cell temp = sudoku.GetSudokuGrid()[row / 3 * 3 + column / 3].RetrieveCells()[column % 3, row % 3];
-                    if (temp.Value == 0)
-                    {
-                        return new Tuple<Cell, (ushort, ushort)>(temp, (row, column));
+        protected Tuple<Cell, (ushort, ushort)>? FindEmptyCell(Sudoku sudoku) {
+            for (ushort row = 0; row < 9; row++) {
+                for (ushort column = 0; column < 9; column++) {
+                    Cell cell = sudoku.GetSudokuGrid()[row / 3 * 3 + column / 3].RetrieveCells()[column % 3, row % 3];
+                    if (cell.Value == 0) {
+                        return new Tuple<Cell, (ushort, ushort)>(cell, (row, column));
                     }
                 }
             }
-
+        
             // If there are no empty cells, return null.
             return null;
         }
@@ -97,13 +93,13 @@ namespace SudokuSolver.SudokuSolvers
 
         private static bool IsValueInRow(Sudoku sudoku, ushort row, ushort value)
         {
-            ushort[] rowValues = sudoku.GetRowValues(row);
+            HashSet<ushort> rowValues = sudoku.GetRowValues(row);
             return rowValues.Contains(value);
         }
 
         private static bool IsValueInColumn(Sudoku sudoku, ushort column, ushort value)
         {
-            ushort[] columnValues = sudoku.GetColumnValues(column);
+            HashSet<ushort> columnValues = sudoku.GetColumnValues(column);
             return columnValues.Contains(value);
         }
 
@@ -125,6 +121,23 @@ namespace SudokuSolver.SudokuSolvers
             }
 
             return false;
+        }
+
+        public bool MakeNodeConsistent() {
+            for (ushort row = 0; row < 9; row++) {
+                for (ushort column = 0; column < 9; column++) {
+                    SudokuCluster cluster = _activeSudoku.GetSudokuGrid()[row / 3 * 3 + column / 3];
+                    Cell cell = cluster.RetrieveCells()[column % 3, row % 3];
+
+                    // Check if the cell has a fixed value.
+                    if (cell.IsFixed) {
+                        // Remove the fixed value from the domains of cells in the same row, column, and cluster.
+                        UpdateDomains(row, column, cluster, cell.Value);
+                    }
+                }
+            }
+
+            return true;
         }
 
         private void UpdateDomains(ushort row, ushort column, SudokuCluster cluster, ushort fixedValue)

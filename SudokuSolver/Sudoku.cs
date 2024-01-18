@@ -1,6 +1,4 @@
-﻿using System.Drawing;
-
-namespace SudokuSolver;
+﻿namespace SudokuSolver;
 
 /// <summary>
 /// Represents the full sudoku grid with nine different <see cref="SudokuCluster"/> instances on it.
@@ -64,23 +62,21 @@ public class Sudoku : ICloneable {
                 }
             }
 
-            if (randomFill)
-            {
+            // Determine whether to initialise the cluster with random values, or empty values with a domain.
+            if (randomFill) {
                 /* Add the finalised cluster to the sudoko grid.
                    Firstly, however, all "empty" (0) values in the read cluster are replaced by appropriate, missing values. */
                 _clusters[i * 3] = cluster1.FillMissingValues();
                 _clusters[i * 3 + 1] = cluster2.FillMissingValues();
                 _clusters[i * 3 + 2] = cluster3.FillMissingValues();
             }
-            else
-            {
-                _clusters[i * 3] = cluster1.InitializeClusterDomains();
-                _clusters[i * 3 + 1] = cluster2.InitializeClusterDomains();
-                _clusters[i * 3 + 2] = cluster3.InitializeClusterDomains();
+            else {
+                _clusters[i * 3] = cluster1.InitialiseCluster();
+                _clusters[i * 3 + 1] = cluster2.InitialiseCluster();
+                _clusters[i * 3 + 2] = cluster3.InitialiseCluster();
             }
         }
     }
-
 
     // Helper function to fill the respective cluster's values, reducing boilerplate code.
     private void FillCluster(SudokuCluster cluster, ushort value, ushort row, ushort column) {
@@ -131,31 +127,11 @@ public class Sudoku : ICloneable {
     /// Returns all values in a given row from left to right.
     /// </summary>
     /// <param name="row">The 0-based row index.</param>
-    public ushort[] GetRowValues(ushort row) {
-        ushort[] values = new ushort[9];
+    public HashSet<ushort> GetRowValues(ushort row) {
+        HashSet<ushort> values = new();
 
         for (int y = 0; y < 9; y++) {
-            values[y] = _clusters[row / 3 * 3 + y / 3].RetrieveCells()[(ushort)(y % 3), row % 3].Value;
-        }
-
-        return values;
-    }
-
-    /// <summary>
-    /// Returns all fixed row values in a given row from left to right.
-    /// </summary>
-    /// <param name="row">The 0-based row index.</param>
-    public ushort[] GetFixedRowValues(ushort row)
-    {
-        ushort[] values = new ushort[9];
-
-        for (int y = 0; y < 9; y++)
-        {
-            Cell temp = _clusters[row / 3 * 3 + y / 3].RetrieveCells()[(ushort)(y % 3), row % 3];
-            if (temp.IsFixed)
-            {
-                values[y] = temp.Value;
-            }
+            values.Add(_clusters[row / 3 * 3 + y / 3].RetrieveCells()[(ushort)(y % 3), row % 3].Value);
         }
 
         return values;
@@ -165,32 +141,11 @@ public class Sudoku : ICloneable {
     /// Returns all values in a given column from top to bottom.
     /// </summary>
     /// <param name="column">The 0-based column index.</param>
-    public ushort[] GetColumnValues(ushort column) {
-        ushort[] values = new ushort[9];
+    public HashSet<ushort> GetColumnValues(ushort column) {
+        HashSet<ushort> values = new();
 
         for (int x = 0; x < 9; x++) {
-            values[x] = _clusters[x / 3 * 3 + column / 3].RetrieveCells()[(ushort)(column % 3), x % 3].Value;
-        }
-
-        return values;
-    }
-
-
-    /// <summary>
-    /// Returns all fixed values in a given column from top to bottom.
-    /// </summary>
-    /// <param name="column">The 0-based column index.</param>
-    public ushort[] GetFixedColumnValues(ushort column)
-    {
-        ushort[] values = new ushort[9];
-
-        for (int x = 0; x < 9; x++)
-        {
-            Cell temp = _clusters[x / 3 * 3 + column / 3].RetrieveCells()[(ushort)(column % 3), x % 3];
-            if (temp.IsFixed)
-            {
-                values[x] = temp.Value;
-            }
+            values.Add(_clusters[x / 3 * 3 + column / 3].RetrieveCells()[(ushort)(column % 3), x % 3].Value);
         }
 
         return values;
@@ -211,67 +166,17 @@ public class Sudoku : ICloneable {
             _heuristicValues = scores
         };
     }
-
-    public bool MakeNodeConsistent()
-    {
-        for (ushort row = 0; row < 9; row++)
-        {
-            for (ushort column = 0; column < 9; column++)
-            {
-                Cell cell = _clusters[row / 3 * 3 + column / 3].RetrieveCells()[column % 3, row % 3];
-
-                // Check if the cell has a fixed value.
-                if (cell.IsFixed)
-                {
-                    // Remove the fixed value from the domains of cells in the same row, column, and cluster.
-                    UpdateDomains(row, column, cell.Value);
-                }
-            }
-        }
-
-        return true;
-    }
-
-    private void UpdateDomains(ushort row, ushort column, ushort fixedValue)
-    {
-        // Update domains in the same row.
-        for (ushort c = 0; c < 9; c++)
-        {
-            if (c != column)
-            {
-                _clusters[row / 3 * 3 + c / 3].RetrieveCells()[c % 3, row % 3].Domain?.Remove(fixedValue);
-            }
-        }
-
-        // Update domains in the same column.
-        for (ushort r = 0; r < 9; r++)
-        {
-            if (r != row)
-            {
-                _clusters[r / 3 * 3 + column / 3].RetrieveCells()[column % 3, r % 3].Domain?.Remove(fixedValue);
-            }
-        }
-
-        // Update domains in the same cluster.
-        for (ushort r = (ushort)(3 * (row / 3)); r < 3 * (row / 3 + 1); r++)
-        {
-            for (ushort c = (ushort)(3 * (column / 3)); c < 3 * (column / 3 + 1); c++)
-            {
-                if (r != row || c != column)
-                {
-                    _clusters[r / 3 * 3 + c / 3].RetrieveCells()[c % 3, r % 3].Domain?.Remove(fixedValue);
-                }
-            }
-        }
-    }
-
 }
 
+/// <summary>
+/// Represents an individual cell in a <see cref="SudokuCluster"/>.
+/// </summary>
 public struct Cell {
     public Cell(ushort value, bool isFixed) {
         Value = value;
         IsFixed = isFixed;
     }
+
     public Cell(ushort value, bool isFixed, HashSet<ushort> domain)
     {
         Value = value;
@@ -312,11 +217,13 @@ public class SudokuCluster : ICloneable {
     /// <param name="coord">The coordinates in the 2d cells array at which to insert the value.</param>
     /// <param name="value">The value that should be inserted in the cell.</param>
     public void AddCell((ushort, ushort) coord, ushort value) {
-        _cells[coord.Item1, coord.Item2] = new Cell(value,value != 0?true : false);
+        _cells[coord.Item1, coord.Item2] = new Cell(value, value != 0);
     }
-    public void AddCell((ushort, ushort) coord, Cell cell)
-    {
-        _cells[coord.Item1, coord.Item2] = new Cell(cell.Value, cell.IsFixed, cell.Domain);
+    /// <summary>
+    /// Adds an existing cell to the cluster.
+    /// </summary>
+    public void AddCell((ushort, ushort) coord, Cell cell) {
+        _cells[coord.Item1, coord.Item2] = cell;
     }
 
     /// <summary>
@@ -327,7 +234,7 @@ public class SudokuCluster : ICloneable {
     }
 
     /// <summary>
-    /// Adds a value to the set of available values in the cluster.
+    /// Removes a value from the set of available values.
     /// </summary>
     public void RemoveAvailableDigit(ushort value) {
         _availableValues.Remove(value);
@@ -358,9 +265,12 @@ public class SudokuCluster : ICloneable {
 
         return this;
     }
-    public SudokuCluster InitializeClusterDomains()
-    {
-        // For each empty position in a cluster, randomly generate a valid value.
+
+    /// <summary>
+    /// Initialises a <see cref="SudokuCluster"/> by filling all empty cells.
+    /// </summary>
+    public SudokuCluster InitialiseCluster() {
+        // Initialise each empty cell as value "0" with the correct domain.
         foreach ((ushort x, ushort y) in _invalidCells) {
             _cells[x, y] = new Cell(0, false, _availableValues.ToHashSet());
         }
@@ -389,6 +299,7 @@ public class SudokuCluster : ICloneable {
 
         return this;
     }
+
     // The implementation of Clone() from the ICloneable interface to enable deep-copying.
     public object Clone() {
         SudokuCluster clonedCluster = new() {
