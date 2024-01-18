@@ -1,8 +1,9 @@
 ﻿using System.Diagnostics;
 
-namespace SudokuSolver;
+namespace SudokuSolver.SudokuSolvers;
 
-public class SudokuSolverHC {
+public class SudokuSolverHC
+{
     // The current state of the sudoku grid.
     private Sudoku _activeSudoku;
 
@@ -36,14 +37,17 @@ public class SudokuSolverHC {
     /// <summary>
     /// Evaluates the heuristic value for a row or column.
     /// </summary>
-    private ushort Evaluate(ushort[] values) {
+    private ushort Evaluate(ushort[] values)
+    {
         HashSet<ushort> uniques = new();
         ushort counter = 0;
 
-        foreach (ushort val in values) {
+        foreach (ushort val in values)
+        {
             /* If a value cannot be added to the hash set, it is a duplicate,
                which means that the heuristic score should be incremented. */
-            if (!uniques.Add(val)) {
+            if (!uniques.Add(val))
+            {
                 counter++;
             }
         }
@@ -54,10 +58,12 @@ public class SudokuSolverHC {
     /// <summary>
     /// Initialises the initial heuristic values.
     /// </summary>
-    private ushort InitHeuristics(Sudoku sudoku) {
+    private ushort InitHeuristics(Sudoku sudoku)
+    {
         ushort score = 0;
 
-        for (ushort i = 0; i < 9; i++) {
+        for (ushort i = 0; i < 9; i++)
+        {
             // Separate computation to reduce complexity.
             ushort column = Evaluate(sudoku.GetColumnValues(i));
             ushort row = Evaluate(sudoku.GetRowValues(i));
@@ -74,22 +80,25 @@ public class SudokuSolverHC {
     /// <summary>
     /// Updates the heuristic values of a sudoku puzzle after two cells were swapped.
     /// </summary>
-    private ushort UpdateHeuristics(Sudoku sudoku, (ushort column, ushort row) coord1, (ushort column, ushort row) coord2) {
+    private ushort UpdateHeuristics(Sudoku sudoku, (ushort column, ushort row) coord1, (ushort column, ushort row) coord2)
+    {
         // First value
         sudoku.GetHeuristicValues()[coord1.column] = Evaluate(sudoku.GetColumnValues(coord1.column));
         sudoku.GetHeuristicValues()[coord1.row + 9] = Evaluate(sudoku.GetRowValues(coord1.row));
         // Second value
         sudoku.GetHeuristicValues()[coord2.column] = Evaluate(sudoku.GetColumnValues(coord2.column));
         sudoku.GetHeuristicValues()[coord2.row + 9] = Evaluate(sudoku.GetRowValues(coord2.row));
-        
+
         // Calculate the update heuristic score of all rows and columns.
         return ComputeSum(sudoku.GetHeuristicValues());
     }
 
-    private ushort ComputeSum(ushort[] values) {
+    private ushort ComputeSum(ushort[] values)
+    {
         ushort total = 0;
 
-        for (ushort i = 0; i < values.Length; i++) {
+        for (ushort i = 0; i < values.Length; i++)
+        {
             total += values[i];
         }
 
@@ -99,36 +108,43 @@ public class SudokuSolverHC {
     /// <summary>
     /// Performs the hill-climbing algorithm with a random-walk implementation.
     /// </summary>
-    public long HillClimbing() {
+    public long HillClimbing()
+    {
         int consecutiveIterationsWithoutImprovement = 0;
 
         ushort tempBestScore = _bestScore;
         ushort localMax = _bestScore;
         Sudoku currentBestSolution = (Sudoku)_activeSudoku.Clone();
 
-        while (_bestScore > 0 && _iterations < _maxIterations) {
+        while (_bestScore > 0 && _iterations < _maxIterations)
+        {
             (Sudoku, ushort) successor = DetermineBestSuccessor();
 
             // If the found successor is an improvement of the active sudoku..
-            if (successor.Item2 < tempBestScore) {
+            if (successor.Item2 < tempBestScore)
+            {
                 _activeSudoku = (Sudoku)successor.Item1.Clone();
                 tempBestScore = successor.Item2;
 
                 // Adjust the best score and solution if the found local score is an improvement.
-                if (tempBestScore <= _bestScore) {
+                if (tempBestScore <= _bestScore)
+                {
                     _bestScore = tempBestScore;
                     currentBestSolution = (Sudoku)_activeSudoku.Clone();
                 }
             }
 
             // Else, the hill-climbing algorithm is stuck on a local maximum or plateau..
-            else {
+            else
+            {
                 consecutiveIterationsWithoutImprovement++;
 
                 // Enter a random walk if the limit has been reached.
-                if (consecutiveIterationsWithoutImprovement >= _localMaxLimit) {
+                if (consecutiveIterationsWithoutImprovement >= _localMaxLimit)
+                {
                     // Return to the previous local maximum if the random walk has a higher local maximum.
-                    if (tempBestScore > _bestScore) {
+                    if (tempBestScore > _bestScore)
+                    {
                         _activeSudoku = (Sudoku)currentBestSolution.Clone();
                     }
 
@@ -143,9 +159,12 @@ public class SudokuSolverHC {
             }
 
             // Print the relevant statistics to the console.
-            if (_showSteps) { 
+            if (_showSteps)
+            {
                 PrintHillClimbStats(tempBestScore, localMax);
-            } else {
+            }
+            else
+            {
                 ShowElapsedTime();
             }
 
@@ -160,7 +179,8 @@ public class SudokuSolverHC {
     /// <summary>
     /// Determines the best successor of a current <see cref="Sudoku"/> state.
     /// </summary>
-    private (Sudoku, ushort) DetermineBestSuccessor() {
+    private (Sudoku, ushort) DetermineBestSuccessor()
+    {
         (Sudoku, ushort) bestSuccessor = new(_activeSudoku, ushort.MaxValue);
         (ushort, ushort) c1 = new(), c2 = new();
 
@@ -169,8 +189,10 @@ public class SudokuSolverHC {
 
         HashSet<(ushort, ushort)> invalidPositions = _activeSudoku.GetSudokuGrid()[clusterIndex].RetrieveInvalidCells();
 
-        for (int i = 0; i < invalidPositions.Count; i++) {
-            for (int j = i + 1; j < invalidPositions.Count; j++) {
+        for (int i = 0; i < invalidPositions.Count; i++)
+        {
+            for (int j = i + 1; j < invalidPositions.Count; j++)
+            {
                 Sudoku clone = (Sudoku)_activeSudoku.Clone();
                 SudokuCluster cluster = clone.GetSudokuGrid()[clusterIndex];
 
@@ -181,13 +203,14 @@ public class SudokuSolverHC {
 
                 /* Adjust the cell's coordinates to apply to a whole sudoku grid (9x9),
                    rather than a single cluster (3x3) */
-                c1 = ((ushort)(cell1.Item1 + clusterIndex % 3 * 3), (ushort)(cell1.Item2 + (clusterIndex / 3) * 3));
-                c2 = ((ushort)(cell2.Item1 + clusterIndex % 3 * 3), (ushort)(cell2.Item2 + (clusterIndex / 3) * 3));
+                c1 = ((ushort)(cell1.Item1 + clusterIndex % 3 * 3), (ushort)(cell1.Item2 + clusterIndex / 3 * 3));
+                c2 = ((ushort)(cell2.Item1 + clusterIndex % 3 * 3), (ushort)(cell2.Item2 + clusterIndex / 3 * 3));
 
                 ushort tempScore = UpdateHeuristics(clone, c1, c2);
 
                 // Only adjust the best successor if an improvement has been found.
-                if (tempScore < bestSuccessor.Item2) {
+                if (tempScore < bestSuccessor.Item2)
+                {
                     bestSuccessor = ((Sudoku)clone.Clone(), tempScore);
                 }
             }
@@ -229,12 +252,14 @@ public class SudokuSolverHC {
     /// <summary>
     /// Occasionally prints the current state of the sudoku puzzle to the console with relevant statistics.
     /// </summary>
-    private void PrintHillClimbStats(ushort eval, ushort localMax) {
+    private void PrintHillClimbStats(ushort eval, ushort localMax)
+    {
         /* Temporarily stop the timer to solely include computation time,
            as printing takes a considerable amount of time. */
         _timer.Stop();
 
-        if (_timer.ElapsedMilliseconds % 500 == 0) {
+        if (_timer.ElapsedMilliseconds % 500 == 0)
+        {
             Console.Clear();
             Console.WriteLine("┌───────────────────────────────┐");
             Console.WriteLine($"│ Timer: {_timer.Elapsed}\t│");
@@ -252,8 +277,10 @@ public class SudokuSolverHC {
     /// <summary>
     /// Prints the active run time of the algorithm to the console.
     /// </summary>
-    private void ShowElapsedTime() {
-        if (_timer.ElapsedMilliseconds % 10 == 0) {
+    private void ShowElapsedTime()
+    {
+        if (_timer.ElapsedMilliseconds % 10 == 0)
+        {
             _timer.Stop();
 
             Console.SetCursorPosition(0, 0);
@@ -266,7 +293,8 @@ public class SudokuSolverHC {
     /// <summary>
     /// Prints the final, solved state to the console with some relevant statistics.
     /// </summary>
-    private void ShowFinalResult(Sudoku solution) {
+    private void ShowFinalResult(Sudoku solution)
+    {
         // Clear previous computations and statistics.
         Console.Clear();
 

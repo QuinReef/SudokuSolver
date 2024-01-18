@@ -1,7 +1,7 @@
 ﻿using System.Diagnostics;
 using System.Diagnostics.Metrics;
 
-namespace SudokuSolver
+namespace SudokuSolver.SudokuSolvers
 {
     public class SudokuSolverFC
     {

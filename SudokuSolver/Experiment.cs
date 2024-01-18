@@ -1,4 +1,6 @@
-﻿namespace SudokuSolver;
+﻿using SudokuSolver.SudokuSolvers;
+
+namespace SudokuSolver;
 
 public class Experiment
 {

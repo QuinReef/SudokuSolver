@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Diagnostics;
 
-namespace SudokuSolver
+namespace SudokuSolver.SudokuSolvers
 {
     public class SudokuSolverCBT : SudokuSolverBase
     {
@@ -41,7 +41,7 @@ namespace SudokuSolver
             return null;
         }
     }
-   
+
 }
 
 
