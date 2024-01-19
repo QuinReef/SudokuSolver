@@ -1,6 +1,6 @@
 ﻿namespace SudokuSolver.SudokuSolvers; 
 
-public class SudokuSolverFC : SudokuSolver {
+public class SudokuSolverFC : SudokuSolverCBT {
     public SudokuSolverFC(Sudoku sudoku) : base(sudoku) { }
 
     public override void Solve() {
@@ -11,37 +11,33 @@ public class SudokuSolverFC : SudokuSolver {
     }
 
     private bool SolveSudoku() {
-        Tuple<Cell, (ushort, ushort)> emptyCell = FindEmptyCell(ActiveSudoku)!;
-
         // If no empty cells remain, the puzzle is solved.
-        if (CheckIfDone(emptyCell)) {
+        if (CheckIfDone(out Tuple<Cell, (ushort, ushort)>? emptyCell)) {
             return true;
         }
 
-        // Obtain the coordinates of the empty cell in the Sudoku.
-        (ushort row, ushort column) = emptyCell.Item2;
+        // Obtain the coordinates of the first empty cell in the sudoku.
+        (ushort row, ushort column) = emptyCell!.Item2;
 
         // Try assigning values from the domain to the empty cell.
         foreach (ushort value in new HashSet<ushort>(emptyCell.Item1.Domain!)) {
             if (IsValidMove(ActiveSudoku, row, column, value)) {
-                // Assign the value to the cell.
                 SudokuCluster cluster = ActiveSudoku.GetSudokuGrid()[row / 3 * 3 + column / 3];
-                
+
+                // Assign the value to the empty cell.
                 PerformMove((column, row), cluster, new Cell(value, emptyCell.Item1.IsFixed, emptyCell.Item1.Domain!));
 
-                // Forward checking: Update domains of affected cells.
-                UpdateDomains(row, column, cluster, value);
+                // Update the domains of the affected cells.
+                UpdateDomains((column, row), cluster, value, false);
 
                 // Recursively try to solve the rest of the puzzle.
-                if (SolveSudoku())
-                {
+                if (SolveSudoku()) {
                     return true;
                 }
 
-                // If the recursive call fails, undo the move (backtrack) and restore domains.
+                // If the previous move had no availible digits, undo the move and restore the domains.
                 PerformMove((column, row), cluster, emptyCell.Item1);
-
-                RestoreDomains(row, column, cluster, value);
+                UpdateDomains((column, row), cluster, value, true);
             }
         }
 
@@ -58,7 +54,7 @@ public class SudokuSolverFC : SudokuSolver {
                 // Check if the cell has a fixed value.
                 if (cell.IsFixed) {
                     // Remove the fixed value from the domains of cells in the same row, column, and cluster.
-                    UpdateDomains(row, column, cluster, cell.Value);
+                    UpdateDomains((column, row), cluster, cell.Value, false);
                 }
             }
         }
@@ -66,50 +62,42 @@ public class SudokuSolverFC : SudokuSolver {
         return true;
     }
 
-    private void UpdateDomains(ushort row, ushort column, SudokuCluster cluster, ushort fixedValue)
-    {
-        // Update domains in the same row, column, and cluster.
+    /* Updates the domains of an affected cell, specified by its location.
+       If "restore" is set to store, it will instead restore the domains by removing the value. */
+    private void UpdateDomains((ushort column, ushort row) loc, SudokuCluster cluster, ushort value, bool restore) {
+        // Update domains in the same column.
+        for (ushort c = 0; c < 9; c++) {
+            if (c != loc.column) {
+                Cell cell = ActiveSudoku.GetSudokuGrid()[loc.row / 3 * 3 + c / 3].RetrieveCells()[c % 3, loc.row % 3];
 
-        for (ushort c = 0; c < 9; c++)
-        {
-            if (c != column)
-            {
-                var cell = ActiveSudoku.GetSudokuGrid()[row / 3 * 3 + c / 3].RetrieveCells()[c % 3, row % 3];
-                cell.Domain?.Remove(fixedValue);
+                if (restore) {
+                    cell.Domain?.Add(value);
+                } else {
+                    cell.Domain?.Remove(value);
+                }
             }
         }
 
-        for (ushort r = 0; r < 9; r++)
-        {
-            if (r != row)
-            {
-                var cell = ActiveSudoku.GetSudokuGrid()[r / 3 * 3 + column / 3].RetrieveCells()[column % 3, r % 3];
-                cell.Domain?.Remove(fixedValue);
-            }
-        }
-        cluster.UpdateDomains(fixedValue);
+        // Update domains in the same row.
+        for (ushort r = 0; r < 9; r++) {
+            if (r != loc.row) {
+                Cell cell = ActiveSudoku.GetSudokuGrid()[r / 3 * 3 + loc.column / 3].RetrieveCells()[loc.column % 3, r % 3];
 
-    }
-
-    private void RestoreDomains(ushort row, ushort column, SudokuCluster cluster, ushort fixedValue)
-    {
-
-        for (ushort c = 0; c < 9; c++)
-        {
-            if (c != column)
-            {
-                ActiveSudoku.GetSudokuGrid()[row / 3 * 3 + c / 3].RetrieveCells()[c % 3, row % 3].Domain?.Add(fixedValue);
+                if (restore) {
+                    cell.Domain?.Add(value);
+                } else {
+                    cell.Domain?.Remove(value);
+                }
             }
         }
 
-        for (ushort r = 0; r < 9; r++)
-        {
-            if (r != row)
-            {
-                ActiveSudoku.GetSudokuGrid()[r / 3 * 3 + column / 3].RetrieveCells()[column % 3, r % 3].Domain?.Add(fixedValue);
+        // Update domains in the same cluster.
+        foreach ((ushort x, ushort y) in cluster.RetrieveInvalidCells()) {
+            if (restore) {
+                cluster.RetrieveCells()[x, y].Domain!.Add(value);
+            } else {
+                cluster.RetrieveCells()[x, y].Domain!.Remove(value);
             }
         }
-        cluster.RestoreDomains(fixedValue);
-
     }
 }

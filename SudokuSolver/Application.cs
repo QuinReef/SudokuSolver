@@ -123,7 +123,7 @@ public class Application {
                 // Solve the sudoku using Iterated Local Search.
                 sudoku.Load(true);
                 SudokuSolverHC solverHC = new(sudoku, 5, showSteps);
-                solverHC.HillClimbing();
+                solverHC.Solve();
                 break;
             case 2:
                 // Solve the sudoku using Chronological BackTracking.
@@ -140,8 +140,8 @@ public class Application {
             case 4:
                 // Solve the sudoku using Forward-Checking with a Most-Constrained-Variable.
                 sudoku.Load(false);
-                // SudokuSolverFCMCV solver = new(sudoku);
-                // solver.Solve();
+                SudokuSolverFCMCV solver = new(sudoku);
+                solver.Solve();
                 break;
             // Input is already restrained, so does not require a default case.
         }

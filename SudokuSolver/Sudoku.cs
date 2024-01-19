@@ -278,28 +278,6 @@ public class SudokuCluster : ICloneable {
         return this;
     }
 
-    public SudokuCluster UpdateDomains(ushort tempFixedValue)
-    {
-        // For each empty position in a cluster, randomly generate a valid value.
-        foreach ((ushort x, ushort y) in _invalidCells)
-        {
-            _cells[x, y].Domain.Remove(tempFixedValue);
-        }
-
-        return this;
-    }
-
-    public SudokuCluster RestoreDomains(ushort tempFixedValue)
-    {
-        // For each empty position in a cluster, randomly generate a valid value.
-        foreach ((ushort x, ushort y) in _invalidCells)
-        {
-            _cells[x, y].Domain.Add(tempFixedValue);
-        }
-
-        return this;
-    }
-
     // The implementation of Clone() from the ICloneable interface to enable deep-copying.
     public object Clone() {
         SudokuCluster clonedCluster = new() {
