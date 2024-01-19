@@ -202,7 +202,7 @@ public class SudokuCluster : ICloneable {
     private HashSet<ushort> _availableValues = Enumerable.Range(1, 9).Select(x => (ushort)x).ToHashSet();
 
     /// <summary>
-    /// Retrieves all values present within each cell in the cluster.
+    /// Retrieves the nine <see cref="Cell"/> instances present in the cluster.
     /// </summary>
     public Cell[,] RetrieveCells() => _cells;
 
@@ -212,7 +212,7 @@ public class SudokuCluster : ICloneable {
     public HashSet<(ushort, ushort)> RetrieveInvalidCells() => _invalidCells;
 
     /// <summary>
-    /// Adds a cell to the cluster.
+    /// Adds a <see cref="Cell"/> to the cluster.
     /// </summary>
     /// <param name="coord">The coordinates in the 2d cells array at which to insert the value.</param>
     /// <param name="value">The value that should be inserted in the cell.</param>
@@ -220,14 +220,14 @@ public class SudokuCluster : ICloneable {
         _cells[coord.Item1, coord.Item2] = new Cell(value, value != 0);
     }
     /// <summary>
-    /// Adds an existing cell to the cluster.
+    /// Replaces an existing <see cref="Cell"/> with a new one.
     /// </summary>
     public void AddCell((ushort, ushort) coord, Cell cell) {
         _cells[coord.Item1, coord.Item2] = cell;
     }
 
     /// <summary>
-    /// Adds the coordinates of a cell to the set of invalid cells.
+    /// Adds the coordinates of a <see cref="Cell"/> to the set of invalid cells.
     /// </summary>
     public void AddInvalidCell((ushort, ushort) coord) {
         _invalidCells.Add(coord);
@@ -241,7 +241,7 @@ public class SudokuCluster : ICloneable {
     }
 
     /// <summary>
-    /// Swaps the values of two cells in the cluster.
+    /// Swaps the values of two <see cref="Cell"/> instances in the cluster.
     /// The function is its own inverse.
     /// </summary>
     public void SwapCells((ushort, ushort) coord1, (ushort, ushort) coord2) {

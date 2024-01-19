@@ -18,49 +18,42 @@ public abstract class SudokuSolver {
     /// Performs the solving algorithm in order to solve the active <see cref="Sudoku"/>.
     /// </summary>
     public abstract void Solve();
-    protected abstract Tuple<Cell, (ushort, ushort)>? FindEmptyCell(Sudoku sudoku);
 
-    protected abstract void AssignValue(ushort row, ushort column, ushort value);
+    private protected void PerformMove((ushort column, ushort row) loc, SudokuCluster cluster, Cell cell) {
+        cluster.AddCell(((ushort)(loc.column % 3), (ushort)(loc.row % 3)), cell);
+    }
 
-    protected abstract void UndoMove(ushort row, ushort column);
-
-    private protected bool SolveSudoku() {
-        Tuple<Cell, (ushort, ushort)> emptyCell = FindEmptyCell(ActiveSudoku)!;
-
-        // If there are no empty cells, the puzzle is solved.
-        if (emptyCell == null) {
+    private protected bool CheckIfDone(Tuple<Cell, (ushort, ushort)>? cell) {
+        if (cell == null) {
             Timer.Stop();
             Console.WriteLine(Timer.Elapsed);
             ActiveSudoku.Show();
             return true;
         }
 
-        var (row, column) = emptyCell.Item2;
-
-        for (ushort value = 1; value <= 9; value++)
-        {
-            //If current assignment does not conflict with any constraints
-            if (IsValidMove(ActiveSudoku, row, column, value))
-            {
-                //Try to assign the value to the cell.
-                AssignValue(row, column, value);
-
-                //Recursively try to solve the rest of the puzzle.
-                if (SolveSudoku())
-                {
-                    return true;
-                }
-
-                //If last move had no availible digits, undo the previous move
-                UndoMove(row, column);
-            }
-        }
-        // No valid value was found for the current empty cell.
         return false;
     }
 
+    /// <summary>
+    /// Finds the first empty cell in a Sudoku grid.
+    /// </summary>
+    /// <returns>The first empty <see cref="Cell"/> found in a row-based search, <c>null</c> otherwise.</returns>
+    private protected Tuple<Cell, (ushort, ushort)>? FindEmptyCell(Sudoku sudoku) {
+        for (ushort row = 0; row < 9; row++) {
+            for (ushort column = 0; column < 9; column++) {
+                Cell cell = sudoku.GetSudokuGrid()[row / 3 * 3 + column / 3].RetrieveCells()[column % 3, row % 3];
+                if (cell.Value == 0) {
+                    return new Tuple<Cell, (ushort, ushort)>(cell, (row, column));
+                }
+            }
+        }
+
+        // If there are no empty cells, return null.
+        return null;
+    }
+
     // Determine if a move abides by all sudoku rules.
-    private bool IsValidMove(Sudoku sudoku, ushort row, ushort column, ushort value) {
+    private protected bool IsValidMove(Sudoku sudoku, ushort row, ushort column, ushort value) {
         return !IsValueInRow(sudoku, row, value) 
                && !IsValueInColumn(sudoku, column, value)
                && !IsValueInCluster(sudoku, row, column, value);
