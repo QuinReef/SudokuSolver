@@ -140,8 +140,8 @@ public class Application {
             case 4:
                 // Solve the sudoku using Forward-Checking with a Most-Constrained-Variable.
                 sudoku.Load(false);
-                SudokuSolverFCMCV solver = new(sudoku);
-                solver.Solve();
+                SudokuSolverFCMCV solverFCMCV = new(sudoku);
+                solverFCMCV.Solve();
                 break;
             // Input is already restrained, so does not require a default case.
         }

@@ -10,6 +10,11 @@ public class SudokuSolverFC : SudokuSolverCBT {
         SolveSudoku();
     }
 
+    protected virtual Tuple<Cell, (ushort, ushort)>? FindEmptyCeell() {
+        CheckIfDone(out Tuple <Cell, (ushort, ushort)>? emptyCell);
+        return emptyCell!;
+    }
+
     private bool SolveSudoku() {
         // If no empty cells remain, the puzzle is solved.
         if (CheckIfDone(out Tuple<Cell, (ushort, ushort)>? emptyCell)) {
@@ -17,7 +22,7 @@ public class SudokuSolverFC : SudokuSolverCBT {
         }
 
         // Obtain the coordinates of the first empty cell in the sudoku.
-        (ushort row, ushort column) = emptyCell!.Item2;
+        (ushort row, ushort column) = FindEmptyCeell().Item2;
 
         // Try assigning values from the domain to the empty cell.
         foreach (ushort value in new HashSet<ushort>(emptyCell.Item1.Domain!)) {
@@ -64,7 +69,7 @@ public class SudokuSolverFC : SudokuSolverCBT {
 
     /* Updates the domains of an affected cell, specified by its location.
        If "restore" is set to store, it will instead restore the domains by removing the value. */
-    private void UpdateDomains((ushort column, ushort row) loc, SudokuCluster cluster, ushort value, bool restore) {
+    private protected void UpdateDomains((ushort column, ushort row) loc, SudokuCluster cluster, ushort value, bool restore) {
         // Update domains in the same column.
         for (ushort c = 0; c < 9; c++) {
             if (c != loc.column) {
