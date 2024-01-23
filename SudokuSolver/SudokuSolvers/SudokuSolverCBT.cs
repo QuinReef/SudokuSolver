@@ -1,7 +1,7 @@
 ﻿namespace SudokuSolver.SudokuSolvers; 
 
 public class SudokuSolverCBT : SudokuSolver {
-    public SudokuSolverCBT(Sudoku sudoku) : base(sudoku) { }
+    public SudokuSolverCBT(Sudoku sudoku, bool showSteps) : base(sudoku, showSteps) { }
 
     public override void Solve() => SolveSudoku();
 
@@ -10,6 +10,9 @@ public class SudokuSolverCBT : SudokuSolver {
         if (CheckIfDone(out Tuple<Cell, (ushort, ushort)>? emptyCell)) {
             return true;
         }
+
+        // Print relevant information to the console.
+        Print();
 
         // Obtain the coordinates of the first empty cell in the sudoku.
         (ushort row, ushort column) = emptyCell!.Item2;
@@ -45,8 +48,7 @@ public class SudokuSolverCBT : SudokuSolver {
 
         if (cell == null) {
             Timer.Stop();
-            Console.WriteLine(Timer.Elapsed);
-            ActiveSudoku.Show();
+            ShowFinalResult(ActiveSudoku);
             return true;
         }
 
@@ -111,5 +113,37 @@ public class SudokuSolverCBT : SudokuSolver {
         }
 
         return false;
+    }
+
+    private protected override void PrintStats() {
+        /* Temporarily stop the timer to solely include computation time,
+           as printing takes a considerable amount of time. */
+        Timer.Stop();
+
+        if (Timer.ElapsedMilliseconds % 50 == 0) {
+            Console.WriteLine();
+            Console.WriteLine("┌───────────────────────────────┐");
+            Console.WriteLine($"│ Timer: {Timer.Elapsed}\t│");
+            Console.WriteLine("└───────────────────────────────┘");
+            Console.WriteLine();
+            ActiveSudoku.Show();
+        }
+
+        Timer.Start();
+    }
+
+    private protected override void ShowFinalResult(Sudoku solution) {
+        Console.WriteLine();
+
+        // If no intermediate steps were shown, remove the "current timer" and previous empty line.
+        if (!ShowSteps) {
+            Console.Clear();
+        }
+
+        Console.WriteLine("┌───────────────────────────────┐");
+        Console.WriteLine($"│ Total Time: {Timer.Elapsed}\t│");
+        Console.WriteLine("└───────────────────────────────┘");
+
+        solution.Show();
     }
 }

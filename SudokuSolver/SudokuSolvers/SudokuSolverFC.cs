@@ -1,7 +1,7 @@
 ﻿namespace SudokuSolver.SudokuSolvers; 
 
 public class SudokuSolverFC : SudokuSolverCBT {
-    public SudokuSolverFC(Sudoku sudoku) : base(sudoku) { }
+    public SudokuSolverFC(Sudoku sudoku, bool showSteps) : base(sudoku, showSteps) { }
 
     public override void Solve() {
         /* Firstly, make the initial Sudoku node consistent by updating domains based on fixed values,
@@ -20,6 +20,9 @@ public class SudokuSolverFC : SudokuSolverCBT {
         if (CheckIfDone(out Tuple<Cell, (ushort, ushort)>? emptyCell)) {
             return true;
         }
+
+        // Print relevant information to the console.
+        Print();
 
         // Obtain the coordinates of the first empty cell in the sudoku.
         (ushort row, ushort column) = FindEmptyCeell().Item2;

@@ -2,7 +2,6 @@
 
 public class SudokuSolverHC : SudokuSolver {
     // Algorithm configurations.
-    private bool _showSteps;
     private ushort _randomWalks;
     private ushort _localMaxLimit = 40;
     private int _maxIterations = 1000000;
@@ -11,13 +10,14 @@ public class SudokuSolverHC : SudokuSolver {
     private ushort _bestScore;
     private int _iterations;
     private ushort _walksEntered;
+    private ushort _localMax;
+    private ushort _evalScore;
 
     // Instance for random values with an optional seed for consistent results.
     private const int seed = 53;
     private readonly Random _random = new(seed);
 
-    public SudokuSolverHC(Sudoku sudoku, ushort walks, bool showSteps) : base(sudoku) {
-        _showSteps = showSteps;
+    public SudokuSolverHC(Sudoku sudoku, bool showSteps, ushort walks) : base(sudoku, showSteps) {
         _randomWalks = walks;
         _bestScore = InitHeuristics(sudoku);
     }
@@ -91,21 +91,21 @@ public class SudokuSolverHC : SudokuSolver {
     public override void Solve() {
         int consecutiveIterationsWithoutImprovement = 0;
 
-        ushort tempBestScore = _bestScore;
-        ushort localMax = _bestScore;
+        _evalScore = _bestScore;
+        _localMax = _bestScore;
         Sudoku currentBestSolution = (Sudoku)ActiveSudoku.Clone();
 
         while (_bestScore > 0 && _iterations < _maxIterations) {
             (Sudoku, ushort) successor = DetermineBestSuccessor();
 
             // If the found successor is an improvement of the active sudoku..
-            if (successor.Item2 < tempBestScore) {
+            if (successor.Item2 < _evalScore) {
                 ActiveSudoku = (Sudoku)successor.Item1.Clone();
-                tempBestScore = successor.Item2;
+                _evalScore = successor.Item2;
 
                 // Adjust the best score and solution if the found local score is an improvement.
-                if (tempBestScore <= _bestScore) {
-                    _bestScore = tempBestScore;
+                if (_evalScore <= _bestScore) {
+                    _bestScore = _evalScore;
                     currentBestSolution = (Sudoku)ActiveSudoku.Clone();
                 }
             }
@@ -117,27 +117,22 @@ public class SudokuSolverHC : SudokuSolver {
                 // Enter a random walk if the limit has been reached.
                 if (consecutiveIterationsWithoutImprovement >= _localMaxLimit) {
                     // Return to the previous local maximum if the random walk has a higher local maximum.
-                    if (tempBestScore > _bestScore) {
+                    if (_evalScore > _bestScore) {
                         ActiveSudoku = (Sudoku)currentBestSolution.Clone();
                     }
 
                     // Perform a random walk.
                     RandomWalk();
-                    tempBestScore = InitHeuristics(ActiveSudoku);
-                    localMax = tempBestScore;
+                    _evalScore = InitHeuristics(ActiveSudoku);
+                    _localMax = _evalScore;
 
                     consecutiveIterationsWithoutImprovement = 0;
                     _walksEntered++;
                 }
             }
 
-            // Print the relevant statistics to the console.
-            if (_showSteps) {
-                PrintHillClimbStats(tempBestScore, localMax);
-            }
-            else {
-                ShowElapsedTime();
-            }
+            // Print relevant information to the console.
+            Print();
 
             _iterations++;
         }
@@ -212,10 +207,7 @@ public class SudokuSolverHC : SudokuSolver {
         ActiveSudoku = (Sudoku)clone.Clone();
     }
 
-    /// <summary>
-    /// Occasionally prints the current state of the sudoku puzzle to the console with relevant statistics.
-    /// </summary>
-    private void PrintHillClimbStats(ushort eval, ushort localMax) {
+    private protected override void PrintStats() {
         /* Temporarily stop the timer to solely include computation time,
            as printing takes a considerable amount of time. */
         Timer.Stop();
@@ -224,7 +216,7 @@ public class SudokuSolverHC : SudokuSolver {
             Console.Clear();
             Console.WriteLine("┌───────────────────────────────┐");
             Console.WriteLine($"│ Timer: {Timer.Elapsed}\t│");
-            Console.WriteLine($"│ Eval: {eval}, From: {localMax}\t\t│");
+            Console.WriteLine($"│ Eval: {_evalScore}, From: {_localMax}\t\t│");
             Console.WriteLine($"│               Best: {_bestScore}\t\t│");
             Console.WriteLine($"│ Iterations: {_iterations}\t\t│");
             Console.WriteLine($"│ Random walks: {_walksEntered}\t\t│");
@@ -235,24 +227,7 @@ public class SudokuSolverHC : SudokuSolver {
         Timer.Start();
     }
 
-    /// <summary>
-    /// Prints the active run time of the algorithm to the console.
-    /// </summary>
-    private void ShowElapsedTime() {
-        if (Timer.ElapsedMilliseconds % 10 == 0) {
-            Timer.Stop();
-
-            Console.SetCursorPosition(0, 0);
-            Console.WriteLine($"Current Time: {Timer.Elapsed}");
-
-            Timer.Start();
-        }
-    }
-
-    /// <summary>
-    /// Prints the final, solved state to the console with some relevant statistics.
-    /// </summary>
-    private void ShowFinalResult(Sudoku solution) {
+    private protected override void ShowFinalResult(Sudoku solution) {
         // Clear previous computations and statistics.
         Console.Clear();
 

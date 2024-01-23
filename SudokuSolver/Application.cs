@@ -28,12 +28,12 @@ public class Application {
         int limit = _sudokuInput!.Count / 2; // the sudoku should always be on the second line
         int? grid = SelectUserInput(limit, $"Please select a Sudoku grid between 1 and {limit}: ");
 
+        // Read the selected sudoku puzzle from the input file.
+        string input = SelectSudoku(grid);
+
         /* Determine whether to show the calculations during execution,
            or to solely solve the sudoku, only printing the final result. */
         bool showSteps = DetermineOutput();
-
-        // Read the selected sudoku puzzle from the input file.
-        string input = SelectSudoku(grid);
 
         // Clear user input.
         Console.Clear();
@@ -122,25 +122,25 @@ public class Application {
             case 1:
                 // Solve the sudoku using Iterated Local Search.
                 sudoku.Load(true);
-                SudokuSolverHC solverHC = new(sudoku, 5, showSteps);
+                SudokuSolverHC solverHC = new(sudoku, showSteps, 5);
                 solverHC.Solve();
                 break;
             case 2:
                 // Solve the sudoku using Chronological BackTracking.
                 sudoku.Load(false);
-                SudokuSolverCBT solverCBT = new(sudoku);
+                SudokuSolverCBT solverCBT = new(sudoku, showSteps);
                 solverCBT.Solve();
                 break;
             case 3:
                 // Solve the sudoku using Forward-Checking.
                 sudoku.Load(false);
-                SudokuSolverFC solverFC = new(sudoku);
+                SudokuSolverFC solverFC = new(sudoku, showSteps);
                 solverFC.Solve();
                 break;
             case 4:
                 // Solve the sudoku using Forward-Checking with a Most-Constrained-Variable.
                 sudoku.Load(false);
-                SudokuSolverFCMCV solverFCMCV = new(sudoku);
+                SudokuSolverFCMCV solverFCMCV = new(sudoku, showSteps);
                 solverFCMCV.Solve();
                 break;
             // Input is already restrained, so does not require a default case.
