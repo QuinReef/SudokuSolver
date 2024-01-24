@@ -122,8 +122,8 @@ public class Application {
             case 1:
                 // Solve the sudoku using Iterated Local Search.
                 sudoku.Load(true);
-                SudokuSolverHC solverHC = new(sudoku, showSteps, 5);
-                solverHC.Solve();
+                SudokuSolverHC solverHC = new(sudoku, 5, showSteps);
+                solverHC.HillClimbing();
                 break;
             case 2:
                 // Solve the sudoku using Chronological BackTracking.

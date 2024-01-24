@@ -166,6 +166,40 @@ public class Sudoku : ICloneable {
             _heuristicValues = scores
         };
     }
+
+    //USED FOR OLD HILL CLIMBING ALGORITHM
+
+    /// <summary>
+    /// Returns all values in a given row from left to right.
+    /// </summary>
+    /// <param name="row">The 0-based row index.</param>
+    public ushort[] GetRowValuesOld(ushort row)
+    {
+        ushort[] values = new ushort[9];
+
+        for (int y = 0; y < 9; y++)
+        {
+            values[y] = _clusters[row / 3 * 3 + y / 3].RetrieveCells()[(ushort)(y % 3), row % 3].Value;
+        }
+
+        return values;
+    }
+
+    /// <summary>
+    /// Returns all values in a given column from top to bottom.
+    /// </summary>
+    /// <param name="column">The 0-based column index.</param>
+    public ushort[] GetColumnValuesOld(ushort column)
+    {
+        ushort[] values = new ushort[9];
+
+        for (int x = 0; x < 9; x++)
+        {
+            values[x] = _clusters[x / 3 * 3 + column / 3].RetrieveCells()[(ushort)(column % 3), x % 3].Value;
+        }
+
+        return values;
+    }
 }
 
 /// <summary>
@@ -187,6 +221,9 @@ public struct Cell {
     public ushort Value;
     public bool IsFixed;
     public HashSet<ushort>? Domain;
+
+
+    
 }
 
 /// <summary>
@@ -290,4 +327,6 @@ public class SudokuCluster : ICloneable {
 
         return clonedCluster;
     }
+
+    
 }
