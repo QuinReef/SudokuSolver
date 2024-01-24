@@ -5,21 +5,21 @@
 /// </summary>
 public class Sudoku : ICloneable {
     // The raw user input representing the starting state of the sudoku grid.
-    private string _grid;
+    private readonly string _grid;
 
-    // The nine different clusters of the sudoku grid.
-    // The clusters are laid out as follows:
-    //      0 1 2
-    //      3 4 5
-    //      6 7 8
+    /* The nine different clusters of the sudoku grid.
+       The clusters are laid out as follows:
+            0 1 2
+            3 4 5
+            6 7 8 */
     private SudokuCluster[] _clusters = new SudokuCluster[9];
-    // The heuristic values of each row and column.
+    /* The heuristic values of each row and column.
+       This is an optional array and may not always be filled. */
     private ushort[] _heuristicValues = new ushort[18];
 
     public Sudoku(string input) {
         _grid = input;
     }
-
 
     /// <summary>
     /// Retrieves the full sudoku grid, represented by nine <see cref="SudokuCluster"/> instances.
@@ -43,8 +43,8 @@ public class Sudoku : ICloneable {
             // Three clusters represent the 3x1 row of clusters.
             SudokuCluster cluster1 = new(), cluster2 = new(), cluster3 = new();
 
-            for (ushort row = 0; row < 3; row++) { // row in the three respective clusters
-                for (ushort column = 0; column < 9; column++) { // column of each value in a respective row
+            for (ushort row = 0; row < 3; row++) {
+                for (ushort column = 0; column < 9; column++) {
                     ushort value = values[i * 27 + row * 9 + column];
 
                     // Determine the appropriate cluster.
@@ -102,7 +102,7 @@ public class Sudoku : ICloneable {
             for (int row = 0; row < 3; row++) {
                 Console.Write("│ ");
 
-                // Each value is printed from left-to-right per row.
+                // Each value is printed from left to right per row.
                 for (int column = 0; column < 9; column++) {
                     Console.Write($"{_clusters[i * 3 + column / 3].RetrieveCells()[(ushort)(column % 3), row].Value} ");
 
@@ -251,7 +251,7 @@ public class SudokuCluster : ICloneable {
     /// <summary>
     /// Adds a <see cref="Cell"/> to the cluster.
     /// </summary>
-    /// <param name="coord">The coordinates in the 2d cells array at which to insert the value.</param>
+    /// <param name="coord">The coordinates in the <see cref="_cells"/> array at which to insert the value.</param>
     /// <param name="value">The value that should be inserted in the cell.</param>
     public void AddCell((ushort, ushort) coord, ushort value) {
         _cells[coord.Item1, coord.Item2] = new Cell(value, value != 0);
@@ -297,7 +297,7 @@ public class SudokuCluster : ICloneable {
             int index = random.Next(_availableValues.Count);
             ushort num = _availableValues.ElementAt(index);
             _cells[x, y].Value = num;
-            _availableValues.Remove(num);
+            RemoveAvailableDigit(num);
         }
 
         return this;

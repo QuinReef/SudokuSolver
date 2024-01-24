@@ -1,31 +1,18 @@
 ﻿namespace SudokuSolver.SudokuSolvers; 
 
 public class SudokuSolverFC : SudokuSolverCBT {
-    public SudokuSolverFC(Sudoku sudoku, bool showSteps) : base(sudoku, showSteps) { }
+    public SudokuSolverFC(Sudoku sudoku, bool showSteps, int interval) : base(sudoku, showSteps, interval) { }
 
     public override void Solve() {
         /* Firstly, make the initial Sudoku node consistent by updating domains based on fixed values,
            then start solving using Forward Checking. */
         MakeNodeConsistent();
-        SolveSudoku();
+        SolveRecursion();
     }
 
-    protected virtual Tuple<Cell, (ushort, ushort)>? FindEmptyCeell() {
-        CheckIfDone(out Tuple <Cell, (ushort, ushort)>? emptyCell);
-        return emptyCell!;
-    }
-
-    private bool SolveSudoku() {
-        // If no empty cells remain, the puzzle is solved.
-        if (CheckIfDone(out Tuple<Cell, (ushort, ushort)>? emptyCell)) {
-            return true;
-        }
-
-        // Print relevant information to the console.
-        Print();
-
+    private protected override bool SolveSudoku(Tuple<Cell, (ushort, ushort)>? emptyCell) {
         // Obtain the coordinates of the first empty cell in the sudoku.
-        (ushort row, ushort column) = FindEmptyCeell().Item2;
+        (ushort row, ushort column) = emptyCell!.Item2;
 
         // Try assigning values from the domain to the empty cell.
         foreach (ushort value in new HashSet<ushort>(emptyCell.Item1.Domain!)) {
@@ -39,7 +26,7 @@ public class SudokuSolverFC : SudokuSolverCBT {
                 UpdateDomains((column, row), cluster, value, false);
 
                 // Recursively try to solve the rest of the puzzle.
-                if (SolveSudoku()) {
+                if (SolveRecursion()) {
                     return true;
                 }
 

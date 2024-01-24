@@ -15,15 +15,20 @@ public abstract class SudokuSolver {
     /// Indicates whether or not to display intermediate steps on the console.
     /// </summary>
     private protected bool ShowSteps;
+    /// <summary>
+    /// Indicates how often, in milliseconds, the <see cref="Sudoku"/> grid should be printed to the console.
+    /// </summary>
+    private protected int PrintInterval;
 
     /// <summary>
     /// Timer to measure total time complexity.
     /// </summary>
     private protected Stopwatch Timer = new();
 
-    protected SudokuSolver(Sudoku sudoku, bool showSteps) {
+    protected SudokuSolver(Sudoku sudoku, bool showSteps, int interval) {
         ActiveSudoku = sudoku;
         ShowSteps = showSteps;
+        PrintInterval = interval;
         Timer.Start();
     }
 
@@ -40,7 +45,7 @@ public abstract class SudokuSolver {
     /// <summary>
     /// Prints the final, solved state to the console with some relevant statistics.
     /// </summary>
-    private protected abstract void ShowFinalResult(Sudoku solution);
+    private protected abstract void ShowFinalResult();
 
     /// <summary>
     /// Prints the appropriate information to the console.
@@ -55,13 +60,13 @@ public abstract class SudokuSolver {
 
     // Prints the active run time of the algorithm to the console.
     private void ShowElapsedTime() {
-        if (Timer.ElapsedMilliseconds % 10 == 0) {
-            Timer.Stop();
+        Timer.Stop();
 
+        if (Timer.ElapsedMilliseconds % 1 == 0) {
             Console.SetCursorPosition(0, 0);
             Console.WriteLine($"Current Time: {Timer.Elapsed}");
-
-            Timer.Start();
         }
+
+        Timer.Start();
     }
 }
