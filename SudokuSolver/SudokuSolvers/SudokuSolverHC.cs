@@ -17,7 +17,7 @@ public class SudokuSolverHC : SudokuSolver {
     private const int seed = 53;
     private readonly Random _random = new(seed);
 
-    public SudokuSolverHC(Sudoku sudoku, bool showSteps, ushort walks) : base(sudoku, showSteps) {
+    public SudokuSolverHC(Sudoku sudoku, bool showSteps, int interval, ushort walks) : base(sudoku, showSteps, interval) {
         _randomWalks = walks;
         _bestScore = InitHeuristics(sudoku);
     }
@@ -137,7 +137,7 @@ public class SudokuSolverHC : SudokuSolver {
             _iterations++;
         }
 
-        ShowFinalResult(currentBestSolution);
+        ShowFinalResult();
     }
 
     /// <summary>
@@ -212,7 +212,7 @@ public class SudokuSolverHC : SudokuSolver {
            as printing takes a considerable amount of time. */
         Timer.Stop();
 
-        if (Timer.ElapsedMilliseconds % 500 == 0) {
+        if (Timer.ElapsedMilliseconds % PrintInterval == 0) {
             Console.Clear();
             Console.WriteLine("┌───────────────────────────────┐");
             Console.WriteLine($"│ Timer: {Timer.Elapsed}\t│");
@@ -227,7 +227,7 @@ public class SudokuSolverHC : SudokuSolver {
         Timer.Start();
     }
 
-    private protected override void ShowFinalResult(Sudoku solution) {
+    private protected override void ShowFinalResult() {
         // Clear previous computations and statistics.
         Console.Clear();
 
@@ -238,6 +238,6 @@ public class SudokuSolverHC : SudokuSolver {
         Console.WriteLine($"│ Random walks: {_walksEntered}\t\t│");
         Console.WriteLine("└───────────────────────────────┘");
 
-        solution.Show();
+        ActiveSudoku.Show();
     }
 }

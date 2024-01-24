@@ -1,12 +1,12 @@
 ﻿namespace SudokuSolver.SudokuSolvers; 
 
 public class SudokuSolverCBT : SudokuSolver {
-    public SudokuSolverCBT(Sudoku sudoku, bool showSteps) : base(sudoku, showSteps) { }
+    public SudokuSolverCBT(Sudoku sudoku, bool showSteps, int interval) : base(sudoku, showSteps, interval) { }
 
-    public override void Solve() => SolveSudoku();
+    public override void Solve() => SolveRecursion();
 
-    private bool SolveSudoku() {
-        // If no empty cells remain, the puzzle is solved.
+    private protected bool SolveRecursion() {
+        // Leave recursion if no more empty cells were found.
         if (CheckIfDone(out Tuple<Cell, (ushort, ushort)>? emptyCell)) {
             return true;
         }
@@ -14,6 +14,10 @@ public class SudokuSolverCBT : SudokuSolver {
         // Print relevant information to the console.
         Print();
 
+        return SolveSudoku(emptyCell);
+    }
+
+    private protected virtual bool SolveSudoku(Tuple<Cell, (ushort, ushort)>? emptyCell) {
         // Obtain the coordinates of the first empty cell in the sudoku.
         (ushort row, ushort column) = emptyCell!.Item2;
 
@@ -25,7 +29,7 @@ public class SudokuSolverCBT : SudokuSolver {
                 PerformMove((column, row), cluster, new Cell(value, emptyCell.Item1.IsFixed));
 
                 // Recursively try to solve the rest of the puzzle.
-                if (SolveSudoku()) {
+                if (SolveRecursion()) {
                     return true;
                 }
 
@@ -44,11 +48,11 @@ public class SudokuSolverCBT : SudokuSolver {
     /// </summary>
     /// <returns><c>True</c> if the algorithm has finished, <c>False</c> otherwise.</returns>
     private protected bool CheckIfDone(out Tuple<Cell, (ushort, ushort)>? cell) {
-        cell = FindEmptyCell(ActiveSudoku)!;
+        cell = FindEmptyCell()!;
 
         if (cell == null) {
             Timer.Stop();
-            ShowFinalResult(ActiveSudoku);
+            ShowFinalResult();
             return true;
         }
 
@@ -69,10 +73,10 @@ public class SudokuSolverCBT : SudokuSolver {
     /// Finds the first empty <see cref="Cell"/> in a Sudoku grid.
     /// </summary>
     /// <returns>The first empty <see cref="Cell"/> found in a row-based search, <c>null</c> otherwise.</returns>
-    private protected Tuple<Cell, (ushort, ushort)>? FindEmptyCell(Sudoku sudoku) {
+    private protected virtual Tuple<Cell, (ushort, ushort)>? FindEmptyCell() {
         for (ushort row = 0; row < 9; row++) {
             for (ushort column = 0; column < 9; column++) {
-                Cell cell = sudoku.GetSudokuGrid()[row / 3 * 3 + column / 3].RetrieveCells()[column % 3, row % 3];
+                Cell cell = ActiveSudoku.GetSudokuGrid()[row / 3 * 3 + column / 3].RetrieveCells()[column % 3, row % 3];
                 if (cell.Value == 0) {
                     return new Tuple<Cell, (ushort, ushort)>(cell, (row, column));
                 }
@@ -120,7 +124,7 @@ public class SudokuSolverCBT : SudokuSolver {
            as printing takes a considerable amount of time. */
         Timer.Stop();
 
-        if (Timer.ElapsedMilliseconds % 50 == 0) {
+        if (Timer.ElapsedMilliseconds % PrintInterval == 0) {
             Console.WriteLine();
             Console.WriteLine("┌───────────────────────────────┐");
             Console.WriteLine($"│ Timer: {Timer.Elapsed}\t│");
@@ -132,7 +136,7 @@ public class SudokuSolverCBT : SudokuSolver {
         Timer.Start();
     }
 
-    private protected override void ShowFinalResult(Sudoku solution) {
+    private protected override void ShowFinalResult() {
         Console.WriteLine();
 
         // If no intermediate steps were shown, remove the "current timer" and previous empty line.
@@ -144,6 +148,6 @@ public class SudokuSolverCBT : SudokuSolver {
         Console.WriteLine($"│ Total Time: {Timer.Elapsed}\t│");
         Console.WriteLine("└───────────────────────────────┘");
 
-        solution.Show();
+        ActiveSudoku.Show();
     }
 }
