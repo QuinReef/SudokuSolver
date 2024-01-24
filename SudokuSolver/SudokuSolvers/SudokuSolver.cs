@@ -61,11 +61,9 @@ public abstract class SudokuSolver {
     // Prints the active run time of the algorithm to the console.
     private void ShowElapsedTime() {
         Timer.Stop();
-
-        if (Timer.ElapsedMilliseconds % 1 == 0) {
-            Console.SetCursorPosition(0, 0);
-            Console.WriteLine($"Current Time: {Timer.Elapsed}");
-        }
+        
+        Console.SetCursorPosition(0, 0);
+        Console.WriteLine($"Current Time: {Timer.Elapsed}");
 
         Timer.Start();
     }

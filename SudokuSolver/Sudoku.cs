@@ -50,13 +50,13 @@ public class Sudoku : ICloneable {
                     // Determine the appropriate cluster.
                     switch (column / 3) {
                         case 0:
-                            FillCluster(cluster1, value, row, column);
+                            FillCluster(cluster1, value, column, row);
                             break;
                         case 1:
-                            FillCluster(cluster2, value, row, (ushort)(column - 3));
+                            FillCluster(cluster2, value, (ushort)(column - 3), row);
                             break;
                         case 2:
-                            FillCluster(cluster3, value, row, (ushort)(column - 6));
+                            FillCluster(cluster3, value, (ushort)(column - 6), row);
                             break;
                     }
                 }
@@ -79,7 +79,7 @@ public class Sudoku : ICloneable {
     }
 
     // Helper function to fill the respective cluster's values, reducing boilerplate code.
-    private void FillCluster(SudokuCluster cluster, ushort value, ushort row, ushort column) {
+    private void FillCluster(SudokuCluster cluster, ushort value, ushort column, ushort row) {
         cluster.AddCell((column, row), value);
 
         if (value == 0) {
@@ -167,34 +167,22 @@ public class Sudoku : ICloneable {
         };
     }
 
-    //USED FOR OLD HILL CLIMBING ALGORITHM
+    //USED FOR THE OLD HILL CLIMBING ALGORITHM
 
-    /// <summary>
-    /// Returns all values in a given row from left to right.
-    /// </summary>
-    /// <param name="row">The 0-based row index.</param>
-    public ushort[] GetRowValuesOld(ushort row)
-    {
+    public ushort[] GetRowValuesOld(ushort row) {
         ushort[] values = new ushort[9];
 
-        for (int y = 0; y < 9; y++)
-        {
+        for (int y = 0; y < 9; y++) {
             values[y] = _clusters[row / 3 * 3 + y / 3].RetrieveCells()[(ushort)(y % 3), row % 3].Value;
         }
 
         return values;
     }
 
-    /// <summary>
-    /// Returns all values in a given column from top to bottom.
-    /// </summary>
-    /// <param name="column">The 0-based column index.</param>
-    public ushort[] GetColumnValuesOld(ushort column)
-    {
+    public ushort[] GetColumnValuesOld(ushort column) {
         ushort[] values = new ushort[9];
 
-        for (int x = 0; x < 9; x++)
-        {
+        for (int x = 0; x < 9; x++) {
             values[x] = _clusters[x / 3 * 3 + column / 3].RetrieveCells()[(ushort)(column % 3), x % 3].Value;
         }
 
@@ -327,6 +315,4 @@ public class SudokuCluster : ICloneable {
 
         return clonedCluster;
     }
-
-    
 }

@@ -13,6 +13,8 @@ public class SudokuSolverFCMCV : SudokuSolverFC {
                 if (cell.Value == 0) {
                     int domainSize = cell.Domain?.Count ?? 0;
 
+                    /* Only adjust the currently selected empty cell if it is either null,
+                       or its domain is bigger than or equal to the newly found cell's domain. */
                     if (smallestEmptyCell == null || domainSize < smallestEmptyCell.Item1.Domain?.Count) {
                         smallestEmptyCell = new Tuple<Cell, (ushort, ushort)>(cell, (row, column));
                     }
@@ -20,6 +22,7 @@ public class SudokuSolverFCMCV : SudokuSolverFC {
             }
         }
 
+        // Either returns the first empty cell, or null if no empty cell was found.
         return smallestEmptyCell;
     }
 }

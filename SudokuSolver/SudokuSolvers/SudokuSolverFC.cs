@@ -40,7 +40,7 @@ public class SudokuSolverFC : SudokuSolverCBT {
         return false;
     }
 
-    public bool MakeNodeConsistent() {
+    private bool MakeNodeConsistent() {
         for (ushort row = 0; row < 9; row++) {
             for (ushort column = 0; column < 9; column++) {
                 SudokuCluster cluster = ActiveSudoku.GetSudokuGrid()[row / 3 * 3 + column / 3];
@@ -58,8 +58,8 @@ public class SudokuSolverFC : SudokuSolverCBT {
     }
 
     /* Updates the domains of an affected cell, specified by its location.
-       If "restore" is set to store, it will instead restore the domains by removing the value. */
-    private protected void UpdateDomains((ushort column, ushort row) loc, SudokuCluster cluster, ushort value, bool restore) {
+       If "restore" is set to true, it will instead restore the domains by removing the value. */
+    private void UpdateDomains((ushort column, ushort row) loc, SudokuCluster cluster, ushort value, bool restore) {
         // Update domains in the same column.
         for (ushort c = 0; c < 9; c++) {
             if (c != loc.column) {

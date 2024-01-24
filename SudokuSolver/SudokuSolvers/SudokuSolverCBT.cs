@@ -4,7 +4,7 @@ public class SudokuSolverCBT : SudokuSolver {
     public SudokuSolverCBT(Sudoku sudoku, bool showSteps, int interval) : base(sudoku, showSteps, interval) { }
 
     public override void Solve() => SolveRecursion();
-
+    
     private protected bool SolveRecursion() {
         // Leave recursion if no more empty cells were found.
         if (CheckIfDone(out Tuple<Cell, (ushort, ushort)>? emptyCell)) {
@@ -70,7 +70,7 @@ public class SudokuSolverCBT : SudokuSolver {
     }
 
     /// <summary>
-    /// Finds the first empty <see cref="Cell"/> in a Sudoku grid.
+    /// Finds the first empty <see cref="Cell"/> in a <see cref="Sudoku"/> grid.
     /// </summary>
     /// <returns>The first empty <see cref="Cell"/> found in a row-based search, <c>null</c> otherwise.</returns>
     private protected virtual Tuple<Cell, (ushort, ushort)>? FindEmptyCell() {
