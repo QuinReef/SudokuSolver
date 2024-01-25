@@ -26,7 +26,7 @@ public class Program {
         List<string> input = ReadInputFile("../../../sudoku_input.txt");
 
         // Determine which algorithm to solve the Sudoku with.
-        int algorithm = RetrieveUserInput(4, "Please select the preferred algorithm (1: HC, 2: CTB, 3: FC, 4: FC-MCV): ");
+        int algorithm = RetrieveUserInput(4, "Please select the preferred algorithm (1: HC, 2: CBT, 3: FC, 4: FC-MCV): ");
 
         // Retrieve the sudoku to solve from the user.
         int limit = input.Count / 2; // the sudoku should always be on the second line

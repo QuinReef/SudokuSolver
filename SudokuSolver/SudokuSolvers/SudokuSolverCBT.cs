@@ -27,6 +27,7 @@ public class SudokuSolverCBT : SudokuSolver {
 
                 // Assign the value to the empty cell.
                 PerformMove((column, row), cluster, new Cell(value, emptyCell.Item1.IsFixed));
+                Steps++;
 
                 // Recursively try to solve the rest of the puzzle.
                 if (SolveRecursion()) {
@@ -35,6 +36,7 @@ public class SudokuSolverCBT : SudokuSolver {
 
                 // If the previous move had no availible digits, undo the move.
                 PerformMove((column, row), cluster, new Cell(0, false));
+                BackTracks++;
             }
         }
 
@@ -146,6 +148,8 @@ public class SudokuSolverCBT : SudokuSolver {
 
         Console.WriteLine("┌───────────────────────────────┐");
         Console.WriteLine($"│ Total Time: {Timer.Elapsed}\t│");
+        Console.WriteLine($"│ Total Steps: {Steps}\t\t│");
+        Console.WriteLine($"│ Total Backtracks: {BackTracks}\t│");
         Console.WriteLine("└───────────────────────────────┘");
 
         ActiveSudoku.Show();

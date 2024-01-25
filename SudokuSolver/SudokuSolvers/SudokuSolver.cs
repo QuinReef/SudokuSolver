@@ -25,6 +25,10 @@ public abstract class SudokuSolver {
     /// </summary>
     private protected Stopwatch Timer = new();
 
+    // Statistics for experiments.
+    public int BackTracks = 0;
+    public int Steps = 0;
+
     protected SudokuSolver(Sudoku sudoku, bool showSteps, int interval) {
         ActiveSudoku = sudoku;
         ShowSteps = showSteps;

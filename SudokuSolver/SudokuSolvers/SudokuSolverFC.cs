@@ -21,6 +21,7 @@ public class SudokuSolverFC : SudokuSolverCBT {
 
                 // Assign the value to the empty cell.
                 PerformMove((column, row), cluster, new Cell(value, emptyCell.Item1.IsFixed, emptyCell.Item1.Domain!));
+                Steps++;
 
                 // Update the domains of the affected cells.
                 UpdateDomains((column, row), cluster, value, false);
@@ -33,6 +34,7 @@ public class SudokuSolverFC : SudokuSolverCBT {
                 // If the previous move had no availible digits, undo the move and restore the domains.
                 PerformMove((column, row), cluster, emptyCell.Item1);
                 UpdateDomains((column, row), cluster, value, true);
+                BackTracks++;
             }
         }
 
