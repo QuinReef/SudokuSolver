@@ -46,12 +46,6 @@ public class Program {
         // Load the selected sudoku, and initialise the solving algorithm.
         Sudoku sudoku = new(puzzle);
         SolveSudoku(sudoku, algorithm, showSteps);
-
-        /* Uncomment the two lines below, and comment the two lines above,
-           to start running the experiment class. */
-
-        //Experiment experiment = new();
-        //experiment.TestSudokuWalkSize(sudoku);
     }
 
     private List<string> ReadInputFile(string filePath) {
